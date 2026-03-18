@@ -409,133 +409,94 @@
     // ===== 서울 배경 =====
     function drawBackground() {
       // 하늘
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.45);
-      skyGrad.addColorStop(0, '#4da6e8');
-      skyGrad.addColorStop(0.4, '#7ec8f0');
-      skyGrad.addColorStop(0.7, '#a8ddf5');
-      skyGrad.addColorStop(1, '#c8ecfa');
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.42);
+      skyGrad.addColorStop(0, '#3a8fd4');
+      skyGrad.addColorStop(0.35, '#6cb4e6');
+      skyGrad.addColorStop(0.7, '#9fd4f0');
+      skyGrad.addColorStop(1, '#d0ecf8');
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, W, H);
 
-      // 뒤쪽 산 (북한산/관악산 느낌)
-      drawSeoulMountains(H * 0.22, H * 0.12, '#7ba898', 0.01, 160);
-      drawSeoulMountains(H * 0.26, H * 0.10, '#8bb8a0', 0.018, 130);
+      // 뒤쪽 산 (부드러운 실루엣)
+      drawMtnSilhouette(H * 0.24, H * 0.08, '#88b8a5', 0.008, 200);
+      drawMtnSilhouette(H * 0.27, H * 0.06, '#9ac8ae', 0.014, 160);
 
-      // 서울 스카이라인
-      drawSeoulSkyline();
+      // 건물 실루엣 (뒤쪽, 흐릿하게)
+      drawBuildingSilhouettes(H * 0.30, 0.018, '#b0bec5', 0.4);
+      // 건물 실루엣 (앞쪽, 조금 더 진하게)
+      drawBuildingSilhouettes(H * 0.33, 0.03, '#90a4ae', 0.6);
 
-      // 녹지대 (트랙 앞 잔디)
-      const groundY = H * 0.38;
-      const groundGrad = ctx.createLinearGradient(0, groundY, 0, H);
-      groundGrad.addColorStop(0, '#7cb860');
-      groundGrad.addColorStop(0.06, '#6aad50');
-      groundGrad.addColorStop(0.15, '#c4a96e');
-      groundGrad.addColorStop(0.3, '#b89860');
-      groundGrad.addColorStop(1, '#a08050');
-      ctx.fillStyle = groundGrad;
-      ctx.fillRect(0, groundY, W, H - groundY);
+      // 한강
+      const riverY = H * 0.34;
+      const riverH = H * 0.04;
+      const riverGrad = ctx.createLinearGradient(0, riverY, 0, riverY + riverH);
+      riverGrad.addColorStop(0, '#7ec8e0');
+      riverGrad.addColorStop(0.5, '#6ab8d8');
+      riverGrad.addColorStop(1, '#80c8d8');
+      ctx.fillStyle = riverGrad;
+      ctx.fillRect(0, riverY, W, riverH);
+      // 반짝임
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      for (let rx = -20; rx < W + 20; rx += 12) {
+        const ry = riverY + 2 + Math.sin(rx * 0.08 + cameraX * 0.003) * 2;
+        ctx.fillRect(rx, ry, 6, 1);
+      }
+
+      // 잔디/녹지
+      const grassY = riverY + riverH;
+      const grassGrad = ctx.createLinearGradient(0, grassY, 0, H * 0.42);
+      grassGrad.addColorStop(0, '#6aaa48');
+      grassGrad.addColorStop(1, '#5a9a3a');
+      ctx.fillStyle = grassGrad;
+      ctx.fillRect(0, grassY, W, H * 0.42 - grassY);
+
+      // 트랙 이후 바닥
+      const trackBot = H * 0.88;
+      const botGrad = ctx.createLinearGradient(0, trackBot, 0, H);
+      botGrad.addColorStop(0, '#5a9a3a');
+      botGrad.addColorStop(1, '#4a8a30');
+      ctx.fillStyle = botGrad;
+      ctx.fillRect(0, trackBot, W, H - trackBot);
     }
 
-    function drawSeoulMountains(baseY, maxH, color, parallax, segW) {
+    function drawMtnSilhouette(baseY, maxH, color, parallax, segW) {
       const offset = cameraX * parallax;
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.moveTo(-10, H);
-      for (let x = -segW; x <= W + segW; x += segW / 4) {
+      ctx.moveTo(-10, baseY + maxH);
+      for (let x = -segW; x <= W + segW; x += segW / 5) {
         const wx = x + offset;
-        const n = Math.sin(wx * 0.006) * 0.5 + Math.sin(wx * 0.003 + 2) * 0.3 + Math.sin(wx * 0.012) * 0.2;
-        ctx.lineTo(x, baseY - maxH * (0.5 + n * 0.5));
+        const n = Math.sin(wx * 0.005) * 0.5 + Math.sin(wx * 0.002 + 1.8) * 0.3 + Math.sin(wx * 0.01) * 0.2;
+        ctx.lineTo(x, baseY - maxH * (0.4 + n * 0.5));
       }
-      ctx.lineTo(W + 10, H);
+      ctx.lineTo(W + 10, baseY + maxH);
       ctx.closePath();
       ctx.fill();
     }
 
-    function drawSeoulSkyline() {
-      const skylineY = H * 0.30;
-      const parallax = 0.025;
+    function drawBuildingSilhouettes(baseY, parallax, color, opacity) {
       const offset = cameraX * parallax;
+      ctx.globalAlpha = opacity;
+      ctx.fillStyle = color;
 
-      // 건물 데이터: [x오프셋, 폭, 높이, 색상]
-      const buildings = [
-        [0, 22, 55, '#8090a0'], [30, 18, 40, '#90a0b0'], [55, 25, 65, '#7888a0'],
-        [85, 15, 35, '#a0aab5'], [105, 20, 50, '#8595a5'],
-        [135, 12, 80, '#7080a0'], // 롯데타워 (가늘고 높음)
-        [155, 22, 45, '#95a0b0'], [182, 18, 55, '#8090a5'],
-        [210, 28, 38, '#a0a8b5'], [245, 16, 48, '#8898a8'],
-        [268, 20, 42, '#90a0b0'], [295, 24, 58, '#8090a0'],
-        [325, 14, 36, '#a0a8b5'], [345, 20, 52, '#8595a5'],
-        [375, 18, 44, '#95a0b0'], [400, 22, 60, '#7888a0'],
-        [430, 16, 38, '#a0aab5'], [452, 26, 50, '#8090a0'],
-        [485, 20, 42, '#90a0b0'], [510, 14, 55, '#8595a5'],
+      const blds = [
+        [0,16,40],[22,12,28],[38,20,52],[64,10,24],[78,14,36],
+        [98,8,60],[110,18,34],[134,14,44],[154,10,28],[168,16,38],
+        [190,12,50],[208,18,30],[232,14,46],[252,10,24],[266,20,56],
+        [292,12,32],[308,16,42],[330,10,26],[344,18,48],[368,14,36],
+        [388,12,54],[406,16,30],[428,20,44],[454,10,28],[468,14,38],
       ];
+      const repeatW = 490;
 
-      const repeatW = 540;
-
-      for (let rep = -1; rep <= Math.ceil(W / repeatW) + 1; rep++) {
-        const baseX = rep * repeatW - (offset % repeatW);
-        buildings.forEach(([bx, bw, bh, col]) => {
-          const sx = baseX + bx;
-          if (sx + bw < -10 || sx > W + 10) return;
-          const by = skylineY - bh;
-
-          ctx.fillStyle = col;
-          ctx.fillRect(sx, by, bw, bh + (H - skylineY) * 0.3);
-
-          // 창문
-          ctx.fillStyle = 'rgba(255,255,255,0.15)';
-          const winW = 3, winH = 3, winGapX = 6, winGapY = 7;
-          for (let wy = by + 5; wy < skylineY - 4; wy += winGapY) {
-            for (let wx = sx + 3; wx < sx + bw - 3; wx += winGapX) {
-              ctx.fillRect(wx, wy, winW, winH);
-            }
-          }
+      for (let rep = -1; rep <= Math.ceil(W / repeatW) + 2; rep++) {
+        const bx = rep * repeatW - (offset % repeatW);
+        blds.forEach(([x, w, h]) => {
+          const sx = bx + x;
+          if (sx + w < -5 || sx > W + 5) return;
+          ctx.fillRect(sx, baseY - h, w, h + 10);
         });
       }
-
-      // 남산타워 (고정 위치, 패럴랙스 약하게)
-      const towerOffset = cameraX * 0.02;
-      const towerX = W * 0.55 - (towerOffset % (W * 2));
-
-      if (towerX > -60 && towerX < W + 60) {
-        // 산
-        ctx.fillStyle = '#6a9a58';
-        ctx.beginPath();
-        ctx.moveTo(towerX - 50, skylineY + 5);
-        ctx.quadraticCurveTo(towerX, skylineY - 35, towerX + 50, skylineY + 5);
-        ctx.fill();
-
-        // 타워 기둥
-        ctx.fillStyle = '#d0d0d0';
-        ctx.fillRect(towerX - 2.5, skylineY - 75, 5, 45);
-
-        // 전망대
-        ctx.fillStyle = '#c0c0c8';
-        ctx.beginPath();
-        ctx.roundRect(towerX - 8, skylineY - 80, 16, 12, 3);
-        ctx.fill();
-
-        // 안테나
-        ctx.strokeStyle = '#b0b0b8';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(towerX, skylineY - 80);
-        ctx.lineTo(towerX, skylineY - 100);
-        ctx.stroke();
-      }
-
-      // 하단 풀숲
-      ctx.fillStyle = '#5a9a40';
-      ctx.beginPath();
-      ctx.moveTo(0, skylineY + 5);
-      for (let x = 0; x <= W; x += 8) {
-        const treeH = 3 + Math.sin(x * 0.15 + offset * 0.02) * 3 + Math.sin(x * 0.08) * 2;
-        ctx.lineTo(x, skylineY + 5 - treeH);
-      }
-      ctx.lineTo(W, skylineY + 15);
-      ctx.lineTo(0, skylineY + 15);
-      ctx.closePath();
-      ctx.fill();
+      ctx.globalAlpha = 1;
     }
 
     // ===== 트랙 =====
@@ -558,18 +519,15 @@
       ctx.fillRect(0, tTop - 3, W, 4);
       ctx.fillRect(0, tBot - 1, W, 4);
 
-      // 레인 구분
-      if (mammoths.length > 0) {
-        const lc = Math.min(LANE_COUNT, mammoths.length);
-        const lh = (tBot - tTop) / lc;
-        ctx.setLineDash([8, 6]);
-        ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-        ctx.lineWidth = 1;
-        for (let i = 1; i < lc; i++) {
-          ctx.beginPath(); ctx.moveTo(0, tTop + lh * i); ctx.lineTo(W, tTop + lh * i); ctx.stroke();
-        }
-        ctx.setLineDash([]);
+      // 트랙 표면 텍스처 라인
+      ctx.setLineDash([6, 12]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      const trackH = tBot - tTop;
+      for (let i = 1; i < 6; i++) {
+        ctx.beginPath(); ctx.moveTo(0, tTop + trackH * i / 6); ctx.lineTo(W, tTop + trackH * i / 6); ctx.stroke();
       }
+      ctx.setLineDash([]);
 
       // 거리 마커
       ctx.font = '9px system-ui';
@@ -729,15 +687,16 @@
     function drawMammothsAndIndicators(now) {
       const offL = [], offR = [];
       const tTop = H * 0.42, tBot = H * 0.88;
-      const lc = Math.min(LANE_COUNT, mammoths.length);
-      const lh = (tBot - tTop) / lc;
+      const trackH = tBot - tTop;
+      const pad = trackH * 0.08;
 
-      const sorted = [...mammoths].sort((a, b) => a.laneIndex - b.laneIndex);
+      // z값(0~1)으로 깊이 정렬: z 작을수록 뒤(위), z 클수록 앞(아래) → 먼저 그림
+      const sorted = [...mammoths].sort((a, b) => a.z - b.z);
 
       for (const m of sorted) {
         const sx = m.x - cameraX + W * 0.35;
-        const ly = tTop + lh * (m.laneIndex + 0.5);
-        const scale = 0.5 + (m.laneIndex / Math.max(1, lc - 1)) * 0.3;
+        const ly = tTop + pad + m.z * (trackH - pad * 2);
+        const scale = 0.45 + m.z * 0.4;
 
         if (sx < -70 || sx > W + 70) {
           if (sx < 0) offL.push(m); else offR.push(m);
@@ -746,6 +705,18 @@
 
         const phase = raceRunning && !racePaused ? (now - raceStartTime - pausedTotal) / 1000 + m.index * 0.5 : 0;
         drawMammoth(sx, ly, m, scale, m.finished ? 0 : phase);
+
+        // 충돌 이펙트 (빨간 원 플래시)
+        if (m.collideTimer > 0) {
+          ctx.globalAlpha = Math.min(m.collideTimer / 300, 0.35);
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(sx, ly, 20 * scale, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+
         if (raceRunning && !m.finished && !racePaused) spawnDust(m.x, ly, 'rgba(180,160,120,0.3)');
 
         ctx.font = `bold ${10 * scale}px system-ui`;
@@ -902,6 +873,10 @@
           name: names[i].trim() || `매머드 ${i + 1}`,
           color: (colors && colors[i]) ? colors[i] : MAMMOTH_COLORS[i % MAMMOTH_COLORS.length],
           laneIndex: i % lc, x: 0, velocity: BASE_SPEED,
+          z: (i / Math.max(1, n - 1)),
+          zVel: 0,
+          colliding: false,
+          collideTimer: 0,
           finished: false, index: i,
           burstTimer: 0, burstAmount: 0, stumbleTimer: 0
         });
@@ -923,6 +898,40 @@
       lastFrameTime = now;
       let allFinished = true;
 
+      // Z축 이동 (자유 드리프트)
+      for (const m of mammoths) {
+        if (m.finished) continue;
+        m.zVel += (Math.random() - 0.5) * 0.006;
+        m.zVel *= 0.92;
+        m.zVel = Math.max(-0.012, Math.min(0.012, m.zVel));
+        m.z += m.zVel;
+        m.z = Math.max(0.02, Math.min(0.98, m.z));
+      }
+
+      // 충돌 판정 (x와 z 모두 가까우면 서로 감속)
+      const COLLISION_X = 60;
+      const COLLISION_Z = 0.12;
+      for (const m of mammoths) m.colliding = false;
+
+      for (let i = 0; i < mammoths.length; i++) {
+        const a = mammoths[i];
+        if (a.finished) continue;
+        for (let j = i + 1; j < mammoths.length; j++) {
+          const b = mammoths[j];
+          if (b.finished) continue;
+          const dx = Math.abs(a.x - b.x);
+          const dz = Math.abs(a.z - b.z);
+          if (dx < COLLISION_X && dz < COLLISION_Z) {
+            a.colliding = true;
+            b.colliding = true;
+            // z 방향으로 서로 밀어냄
+            const pushZ = (COLLISION_Z - dz) * 0.003;
+            if (a.z < b.z) { a.zVel -= pushZ; b.zVel += pushZ; }
+            else { a.zVel += pushZ; b.zVel -= pushZ; }
+          }
+        }
+      }
+
       for (const m of mammoths) {
         if (m.finished) continue;
         const noise = (Math.random() - 0.5) * 1.2;
@@ -934,6 +943,14 @@
 
         if (m.stumbleTimer > 0) { m.velocity *= 0.985; m.stumbleTimer -= dt; }
         else if (Math.random() < 0.002) { m.stumbleTimer = 500 + Math.random() * 800; }
+
+        // 충돌 중이면 감속
+        if (m.colliding) {
+          m.velocity *= 0.965;
+          m.collideTimer = 300;
+        } else if (m.collideTimer > 0) {
+          m.collideTimer -= dt;
+        }
 
         m.velocity = Math.max(BASE_SPEED * 0.7, Math.min(BASE_SPEED * 1.4, m.velocity));
 
