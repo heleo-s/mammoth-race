@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>매머드 레이싱</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel-bg: #161b22;
+      --accent: #f97316;
+      --accent-soft: rgba(249,115,22,0.12);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1f2933 0, #020617 55%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 960px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .title {
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      background: rgba(15,23,42,0.75);
+      border-radius: 999px;
+      padding: 4px 8px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(148,163,184,0.25);
+    }
+    .chip-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.9);
+    }
+    input, select, button {
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.9);
+      color: var(--text);
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      outline: none;
+    }
+    input::placeholder {
+      color: rgba(148,163,184,0.8);
+    }
+    button {
+      background: linear-gradient(135deg, #f97316, #fb923c);
+      border: none;
+      color: #111827;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(248,113,22,0.45);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+      white-space: nowrap;
+    }
+    button:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 4px 12px rgba(248,113,22,0.35);
+      filter: brightness(0.95);
+    }
+    button[disabled] {
+      opacity: 0.4;
+      box-shadow: none;
+      cursor: default;
+      filter: grayscale(0.5);
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: minmax(0,1.5fr) minmax(0,1fr);
+      gap: 12px;
+    }
+    @media (max-width: 720px) {
+      .main {
+        grid-template-columns: minmax(0,1fr);
+      }
+    }
+    .canvas-wrapper {
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
+      box-shadow:
+        0 15px 40px rgba(15,23,42,0.8),
+        inset 0 0 0 1px rgba(148,163,184,0.15);
+      aspect-ratio: 16 / 9;
+      min-height: 260px;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .mini-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card {
+      background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(15,23,42,0.9));
+      border-radius: 16px;
+      padding: 10px 12px;
+      border: 1px solid rgba(148,163,184,0.35);
+      box-shadow: 0 10px 30px rgba(15,23,42,0.75);
+    }
+    .card-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge {
+      font-size: 0.7rem;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(248,113,22,0.12);
+      color: #fed7aa;
+    }
+    .rank-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.8rem;
+      max-height: 160px;
+      overflow: auto;
+    }
+    .rank-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.8);
+    }
+    .rank-item.me {
+      background: linear-gradient(90deg, rgba(248,113,22,0.22), rgba(15,23,42,0.9));
+    }
+    .rank-pos {
+      font-weight: 700;
+      font-size: 0.72rem;
+      color: #fbbf24;
+      min-width: 22px;
+    }
+    .rank-name {
+      flex: 1;
+      text-align: left;
+      padding: 0 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .rank-dist {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .note {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .note strong {
+      color: #fcd34d;
+    }
+
+    .indicator-legend {
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .tri-sample {
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 7px solid var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">MAMMOTH RACING</div>
+      <div class="controls">
+        <span class="chip-label">참가자 이름</span>
+        <input id="namesInput" type="text"
+               placeholder="예: 매머드1, 매머드2, 매머드3"
+               size="30" />
+        <span class="chip-label">카메라 기준 등수</span>
+        <select id="focusRankSelect">
+          <option value="1">1등</option>
+          <option value="2">2등</option>
+          <option value="3">3등</option>
+        </select>
+        <button id="startBtn">
+          ▶ 레이스 시작
+        </button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="canvas-wrapper">
+        <canvas id="raceCanvas"></canvas>
+      </div>
+
+      <div class="mini-panel">
+        <div class="card">
+          <div class="card-title">
+            <span>현재 순위</span>
+            <span class="badge">실시간</span>
+          </div>
+          <ul id="rankList" class="rank-list"></ul>
+          <div class="indicator-legend">
+            <span class="tri-sample"></span> 
+            <span>화면 밖 매머드 방향 표시</span>
+          </div>
+          <div class="note">
+            <strong>규칙</strong>: 매머드들의 속도는 전부 무작위로 변하고,<br />
+            레이스가 진행되면서 누가 이길지 알 수 없습니다.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== 설정값 =====
+    const RACE_DURATION = 20000; // ms, 목표 레이스 시간 ~20초
+    const TRACK_LENGTH = 3000;   // 가상 트랙 길이
+    const LANE_COUNT = 6;
+    const BASE_SPEED = TRACK_LENGTH / (RACE_DURATION / 1000);
+
+    const canvas = document.getElementById('raceCanvas');
+    const ctx = canvas.getContext('2d');
+    let width = 0, height = 0;
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    let mammoths = [];
+    let raceStartTime = null;
+    let raceRunning = false;
+    let focusRank = 1; // 카메라가 따라갈 등수
+    let cameraX = 0;
+
+    // 이름 → 색 고정
+    function colorFromName(name) {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) {
+        hash = (hash * 31 + name.charCodeAt(i)) | 0;
+      }
+      const hue = Math.abs(hash) % 360;
+      return `hsl(${hue}, 80%, 60%)`;
+    }
+
+    function initRace(names) {
+      const n = names.length;
+      if (!n) return;
+
+      const usableLanes = Math.min(LANE_COUNT, n);
+      const laneHeight = height * 0.55 / usableLanes;
+      const trackCenterY = height * 0.6;
+
+      mammoths = [];
+
+      for (let i = 0; i < n; i++) {
+        const laneIndex = i % usableLanes;
+        const laneOffset = (laneIndex - (usableLanes - 1) / 2) * laneHeight * 0.8;
+        const baseY = trackCenterY + laneOffset;
+
+        // 개별 기본 속도 (±10% 편차, 완전 랜덤)
+        const personalFactor = 0.9 + Math.random() * 0.2;
+        const baseSpeedForMammoth = BASE_SPEED * personalFactor;
+
+        // 2.5D 느낌용 깊이
+        const depthFactor = 1 - (laneIndex / Math.max(1, usableLanes - 1)) * 0.3;
+
+        mammoths.push({
+          name: names[i].trim() || `매머드 ${i + 1}`,
+          color: colorFromName(names[i]),
+          laneIndex,
+          x: 0,
+          y: baseY,
+          baseSpeed: baseSpeedForMammoth,
+          velocity: baseSpeedForMammoth,
+          finished: false,
+          depth: depthFactor,
+          index: i
+        });
+      }
+
+      raceStartTime = performance.now();
+      raceRunning = true;
+      cameraX = 0;
+      requestAnimationFrame(loop);
+    }
+
+    function updateRace(now) {
+      if (!raceRunning) return;
+
+      const elapsed = now - raceStartTime;
+      let allFinished = true;
+
+      for (const m of mammoths) {
+        if (m.finished) continue;
+
+        // 기본 속도 주변에서 약간씩 흔들리게 (랜덤 노이즈)
+        const noise = (Math.random() - 0.5) * 0.4; // -0.2 ~ +0.2
+        m.velocity += noise * (BASE_SPEED * 0.1);
+
+        // 너무 느려지거나 너무 빨라지지 않게 클램프
+        const minV = BASE_SPEED * 0.6;
+        const maxV = BASE_SPEED * 1.5;
+        m.velocity = Math.max(minV, Math.min(maxV, m.velocity));
+
+        // 막판 스퍼트 보정 (마지막 5초 동안 뒤처진 매머드에게 약간의 보정)
+        const remaining = RACE_DURATION - elapsed;
+        if (remaining < 5000 && remaining > 0 && !m.finished) {
+          const progress = m.x / TRACK_LENGTH; // 0~1
+          const catchUpBoost = (1 - progress) * (5000 - remaining) / 5000;
+          m.velocity += catchUpBoost * (BASE_SPEED * 0.2);
+        }
+
+        // 위치 업데이트 (시간 차이는 프레임 간 실제 시간 사용)
+        const dt = 16; // 대략 60fps 기준 (간단화)
+        m.x += (m.velocity * dt) / 1000;
+        if (m.x >= TRACK_LENGTH) {
+          m.x = TRACK_LENGTH;
+          m.finished = true;
+        } else {
+          allFinished = false;
+        }
+      }
+
+      // 카메라: 현재 focusRank 에 해당하는 매머드 기준
+      const ranking = getCurrentRanking();
+      const focusEntry = ranking[focusRank - 1] || ranking[0];
+      if (focusEntry) {
+        const targetX = focusEntry.m.x;
+        const idealCameraX = targetX - width * 0.32;
+        const minCam = 0;
+        const maxCam = TRACK_LENGTH - width * 0.6;
+        const clamped = Math.max(minCam, Math.min(maxCam, idealCameraX));
+        cameraX += (clamped - cameraX) * 0.1; // 부드러운 따라가기
+      }
+
+      if (elapsed >= RACE_DURATION * 1.5 || allFinished) {
+        raceRunning = false;
+      }
+    }
+
+    function getCurrentRanking() {
+      return mammoths
+        .map(m => ({ m, x: m.x }))
+        .sort((a, b) => b.x - a.x)
+        .map((entry, i) => ({
+          rank: i + 1,
+          m: entry.m
+        }));
+    }
+
+    function drawTrackBackground() {
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+      skyGrad.addColorStop(0, '#020617');
+      skyGrad.addColorStop(0.5, '#1e293b');
+      skyGrad.addColorStop(1, '#020617');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      const trackTop = height * 0.35;
+      const trackBottom = height * 0.8;
+      const trackGrad = ctx.createLinearGradient(0, trackTop, 0, trackBottom);
+      trackGrad.addColorStop(0, '#4b5563');
+      trackGrad.addColorStop(0.5, '#6b7280');
+      trackGrad.addColorStop(1, '#4b5563');
+      ctx.fillStyle = trackGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, trackTop);
+      ctx.lineTo(width, trackTop);
+      ctx.lineTo(width, trackBottom);
+      ctx.lineTo(0, trackBottom);
+      ctx.closePath();
+      ctx.fill();
+
+      // 중앙선
+      ctx.setLineDash([10, 10]);
+      ctx.strokeStyle = 'rgba(243,244,246,0.5)';
+      ctx.lineWidth = 2;
+      const mid = (trackTop + trackBottom) / 2;
+      ctx.beginPath();
+      ctx.moveTo(0, mid);
+      ctx.lineTo(width, mid);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 결승선
+      const worldFinishX = TRACK_LENGTH;
+      const screenFinishX = worldFinishX - cameraX + width * 0.2;
+      if (screenFinishX > -40 && screenFinishX < width + 40) {
+        const stripeWidth = 10;
+        const finishTop = trackTop - 8;
+        const finishBottom = trackBottom + 8;
+        for (let i = -4; i < (finishBottom - finishTop) / stripeWidth + 4; i++) {
+          const y = finishTop + i * stripeWidth;
+          ctx.fillStyle = i % 2 === 0 ? '#f9fafb' : '#111827';
+          ctx.fillRect(screenFinishX - 6, y, 12, stripeWidth);
+        }
+      }
+    }
+
+    function drawMammothsAndIndicators() {
+      const visibleList = [];
+      const offscreenLeft = [];
+      const offscreenRight = [];
+
+      const sorted = [...mammoths].sort((a, b) => a.laneIndex - b.laneIndex);
+
+      for (const m of sorted) {
+        const screenX = m.x - cameraX + width * 0.2;
+        const baseY = m.y;
+
+        const size = 36 * m.depth;
+        const bodyW = size * 1.4;
+        const bodyH = size;
+        const shadowYOffset = 10 * m.depth;
+
+        if (screenX < -bodyW || screenX > width + bodyW) {
+          if (screenX < 0) offscreenLeft.push(m);
+          else offscreenRight.push(m);
+          continue;
+        }
+        visibleList.push(m);
+
+        // 그림자
+        ctx.fillStyle = 'rgba(15,23,42,0.6)';
+        ctx.beginPath();
+        ctx.ellipse(screenX, baseY + shadowYOffset, bodyW * 0.55, bodyH * 0.28, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 몸통
+        const grad = ctx.createLinearGradient(screenX - bodyW / 2, baseY - bodyH / 2, screenX + bodyW / 2, baseY + bodyH / 2);
+        grad.addColorStop(0, '#020617');
+        grad.addColorStop(0.2, m.color);
+        grad.addColorStop(1, '#111827');
+        ctx.fillStyle = grad;
+        ctx.strokeStyle = 'rgba(15,23,42,0.9)';
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        ctx.roundRect(screenX - bodyW / 2, baseY - bodyH / 2, bodyW, bodyH, bodyH * 0.4);
+        ctx.fill();
+        ctx.stroke();
+
+        // 머리
+        const headW = bodyW * 0.45;
+        const headH = bodyH * 0.75;
+        ctx.beginPath();
+        ctx.roundRect(screenX + bodyW * 0.1, baseY - headH / 2, headW, headH, headH * 0.4);
+        ctx.fill();
+        ctx.stroke();
+
+        // 상아
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(screenX + bodyW * 0.6, baseY);
+        ctx.quadraticCurveTo(screenX + bodyW * 0.8, baseY + 8, screenX + bodyW * 0.9, baseY);
+        ctx.stroke();
+
+        // 다리
+        const legW = bodyW * 0.18;
+        const legH = bodyH * 0.65;
+        const baseLegY = baseY + bodyH * 0.45;
+        ctx.fillStyle = 'rgba(15,23,42,0.95)';
+        const legOffsets = [-0.3, -0.05, 0.15, 0.4];
+        legOffsets.forEach(offset => {
+          const lx = screenX - bodyW / 2 + bodyW * (0.25 + offset);
+          ctx.beginPath();
+          ctx.roundRect(lx, baseLegY, legW, legH, 4);
+          ctx.fill();
+        });
+
+        // 이름 라벨
+        const name = m.name;
+        const labelY = baseY - bodyH * 0.9;
+        const labelPaddingX = 6;
+        const labelPaddingY = 3;
+        ctx.font = `${12 * m.depth}px system-ui`;
+        const textWidth = ctx.measureText(name).width;
+        const labelW = textWidth + labelPaddingX * 2;
+        const labelH = 16 * m.depth;
+
+        ctx.fillStyle = 'rgba(15,23,42,0.88)';
+        ctx.beginPath();
+        ctx.roundRect(screenX - labelW / 2, labelY - labelH / 2, labelW, labelH, 999);
+        ctx.fill();
+
+        ctx.strokeStyle = m.color;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = '#e5e7eb';
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        ctx.fillText(name, screenX, labelY);
+      }
+
+      // 화면 밖 인디케이터
+      const indicatorYStart = height * 0.4;
+      const indicatorGap = 16;
+
+      ctx.font = '10px system-ui';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+
+      offscreenLeft.forEach((m, i) => {
+        const y = indicatorYStart + i * indicatorGap;
+        drawIndicator('left', m, 6, y);
+      });
+      offscreenRight.forEach((m, i) => {
+        const y = indicatorYStart + i * indicatorGap;
+        drawIndicator('right', m, width - 6, y);
+      });
+
+      function drawIndicator(side, m, x, y) {
+        ctx.fillStyle = 'rgba(15,23,42,0.9)';
+        ctx.strokeStyle = m.color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(
+          side === 'left' ? x + 8 : x - 90,
+          y - 7,
+          82,
+          14,
+          999
+        );
+        ctx.fill();
+        ctx.stroke();
+
+        // 삼각형
+        ctx.fillStyle = m.color;
+        ctx.beginPath();
+        if (side === 'left') {
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + 8, y - 6);
+          ctx.lineTo(x + 8, y + 6);
+        } else {
+          ctx.moveTo(x, y);
+          ctx.lineTo(x - 8, y - 6);
+          ctx.lineTo(x - 8, y + 6);
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        // 이름
+        ctx.fillStyle = '#e5e7eb';
+        ctx.textAlign = side === 'left' ? 'left' : 'right';
+        const textX = side === 'left' ? x + 14 : x - 14;
+        ctx.fillText(m.name, textX, y);
+      }
+    }
+
+    function drawMiniMap() {
+      const pad = 10;
+      const miniW = width * 0.32;
+      const miniH = height * 0.16;
+
+      const x = pad;
+      const y = pad;
+
+      ctx.fillStyle = 'rgba(15,23,42,0.92)';
+      ctx.strokeStyle = 'rgba(148,163,184,0.7)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x, y, miniW, miniH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      const trackX = x + 10;
+      const trackY = y + miniH / 2;
+      const trackInnerW = miniW - 20;
+
+      ctx.strokeStyle = '#6b7280';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(trackX, trackY);
+      ctx.lineTo(trackX + trackInnerW, trackY);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#f9fafb';
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      const finishX = trackX + trackInnerW;
+      ctx.moveTo(finishX, trackY - 6);
+      ctx.lineTo(finishX, trackY + 6);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 매머드 점
+      for (const m of mammoths) {
+        const p = m.x / TRACK_LENGTH;
+        const mx = trackX + trackInnerW * p;
+        ctx.fillStyle = m.color;
+        ctx.beginPath();
+        ctx.arc(mx, trackY, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 카메라 범위 표시
+      const camStartNorm = cameraX / TRACK_LENGTH;
+      const camEndNorm = (cameraX + width * 0.6) / TRACK_LENGTH;
+      const camX1 = trackX + trackInnerW * camStartNorm;
+      const camX2 = trackX + trackInnerW * camEndNorm;
+      ctx.fillStyle = 'rgba(248,113,22,0.16)';
+      ctx.fillRect(camX1, trackY - 8, camX2 - camX1, 16);
+
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(camX1, trackY - 8, camX2 - camX1, 16);
+
+      ctx.font = '9px system-ui';
+      ctx.fillStyle = '#9ca3af';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('미니맵', x + 10, y + 6);
+    }
+
+    function render(now) {
+      drawTrackBackground();
+      drawMammothsAndIndicators();
+      drawMiniMap();
+    }
+
+    function loop(now) {
+      if (!raceRunning && !mammoths.length) {
+        render(performance.now());
+        return;
+      }
+      updateRace(now);
+      render(now);
+      if (raceRunning) {
+        requestAnimationFrame(loop);
+      } else {
+        render(performance.now());
+      }
+      updateRankList();
+    }
+
+    function updateRankList() {
+      const ul = document.getElementById('rankList');
+      ul.innerHTML = '';
+      if (!mammoths.length) return;
+      const ranking = getCurrentRanking();
+      ranking.forEach(({ rank, m }) => {
+        const li = document.createElement('li');
+        li.className = 'rank-item' + (rank === focusRank ? ' me' : '');
+        const pos = document.createElement('span');
+        pos.className = 'rank-pos';
+        pos.textContent = `${rank}위`;
+        const name = document.createElement('span');
+        name.className = 'rank-name';
+        name.textContent = m.name;
+        const dist = document.createElement('span');
+        dist.className = 'rank-dist';
+        dist.textContent = m.finished ? '결승선' : `${Math.round((m.x / TRACK_LENGTH) * 100)}%`;
+        li.appendChild(pos);
+        li.appendChild(name);
+        li.appendChild(dist);
+        ul.appendChild(li);
+      });
+    }
+
+    // 초기 1프레임 그리기
+    requestAnimationFrame(loop);
+
+    // ===== UI 이벤트 =====
+    const namesInput = document.getElementById('namesInput');
+    const focusRankSelect = document.getElementById('focusRankSelect');
+    const startBtn = document.getElementById('startBtn');
+
+    focusRankSelect.addEventListener('change', () => {
+      focusRank = parseInt(focusRankSelect.value, 10) || 1;
+    });
+
+    startBtn.addEventListener('click', () => {
+      const raw = namesInput.value.trim();
+      let names;
+      if (!raw) {
+        names = ['매머드 A', '매머드 B', '매머드 C', '매머드 D'];
+      } else {
+        names = raw.split(',').map(s => s.trim()).filter(Boolean);
+      }
+      if (!names.length) return;
+      focusRank = parseInt(focusRankSelect.value, 10) || 1;
+
+      startBtn.disabled = true;
+      initRace(names);
+      setTimeout(() => { startBtn.disabled = false; }, RACE_DURATION + 1000);
+    });
+  </script>
+</body>
+</html>
