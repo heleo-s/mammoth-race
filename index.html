@@ -8,111 +8,207 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #060a14;
-      color: #e5e7eb;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      background: #f0f4f8;
+      color: #1e293b;
       min-height: 100vh;
       min-height: 100dvh;
       overflow-x: hidden;
     }
-    .container {
+
+    /* ===== 설정 화면 ===== */
+    .setup-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 20px 16px;
+      background: linear-gradient(180deg, #87CEEB 0%, #B0E0FF 40%, #e8f4e8 70%, #d4e8d0 100%);
+    }
+    .setup-screen.hidden { display: none; }
+    .setup-card {
       width: 100%;
-      max-width: 480px;
-      padding: 6px 8px;
+      max-width: 400px;
+      background: rgba(255,255,255,0.92);
+      border-radius: 20px;
+      padding: 28px 22px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .setup-title {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #1e293b;
+      letter-spacing: 0.05em;
+    }
+    .setup-subtitle {
+      text-align: center;
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-top: -10px;
+    }
+    .field-group {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
-    .title {
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      font-size: 0.95rem;
-      text-align: center;
-      background: linear-gradient(90deg, #f97316, #fbbf24, #f97316);
-      background-size: 200% 100%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: shimmer 3s linear infinite;
-      padding: 4px 0;
+    .field-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #475569;
     }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+    .field-hint {
+      font-size: 0.68rem;
+      color: #94a3b8;
     }
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-      justify-content: center;
-      background: rgba(15,23,42,0.8);
+    .setup-card textarea {
+      width: 100%;
+      min-height: 100px;
       border-radius: 12px;
-      padding: 8px 10px;
-      border: 1px solid rgba(148,163,184,0.15);
-    }
-    .chip-label {
-      font-size: 0.7rem;
-      color: #9ca3af;
-    }
-    input, select {
-      border-radius: 8px;
-      border: 1px solid rgba(148,163,184,0.35);
-      background: rgba(15,23,42,0.95);
-      color: #e5e7eb;
-      font-size: 0.8rem;
-      padding: 6px 10px;
+      border: 1.5px solid #cbd5e1;
+      background: #f8fafc;
+      color: #1e293b;
+      font-size: 0.85rem;
+      padding: 10px 12px;
       outline: none;
-      flex: 1;
-      min-width: 0;
+      resize: vertical;
+      font-family: inherit;
+      line-height: 1.6;
+      transition: border-color 0.2s;
     }
-    select { flex: 0; min-width: 60px; }
-    input:focus, select:focus { border-color: #f97316; }
-    input::placeholder { color: rgba(148,163,184,0.5); }
-    button {
-      border-radius: 10px;
+    .setup-card textarea:focus { border-color: #f97316; }
+    .setup-card textarea::placeholder { color: #94a3b8; }
+    .setup-card select {
+      width: 100%;
+      border-radius: 12px;
+      border: 1.5px solid #cbd5e1;
+      background: #f8fafc;
+      color: #1e293b;
+      font-size: 0.85rem;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .setup-card select:focus { border-color: #f97316; }
+    .btn-start {
+      width: 100%;
+      padding: 14px;
+      border-radius: 14px;
       border: none;
       background: linear-gradient(135deg, #f97316, #fb923c);
-      color: #111827;
+      color: #fff;
       font-weight: 700;
-      font-size: 0.82rem;
-      padding: 8px 20px;
-      box-shadow: 0 4px 16px rgba(248,113,22,0.45);
+      font-size: 1rem;
       cursor: pointer;
+      box-shadow: 0 6px 20px rgba(249,115,22,0.35);
       transition: transform 0.1s, box-shadow 0.1s;
+      letter-spacing: 0.05em;
+    }
+    .btn-start:active { transform: scale(0.98); box-shadow: 0 3px 10px rgba(249,115,22,0.25); }
+    .mammoth-count {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: -8px;
+    }
+
+    /* ===== 레이스 화면 ===== */
+    .race-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    .race-screen.active { display: flex; }
+    .race-topbar {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 10px;
+      flex-wrap: wrap;
+    }
+    .race-topbar button {
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.75rem;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: transform 0.1s;
       white-space: nowrap;
     }
-    button:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(248,113,22,0.3); }
-    button[disabled] { opacity: 0.3; box-shadow: none; cursor: default; }
-    .canvas-wrapper {
-      position: relative;
-      border-radius: 14px;
-      overflow: hidden;
-      background: #0f172a;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-      width: 100%;
-      aspect-ratio: 9 / 16;
+    .race-topbar button:active { transform: scale(0.97); }
+    .btn-pause {
+      background: rgba(30,41,59,0.85);
+      color: #e2e8f0;
     }
-    canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+    .btn-reset {
+      background: rgba(30,41,59,0.85);
+      color: #e2e8f0;
+    }
+    .btn-back {
+      background: rgba(30,41,59,0.85);
+      color: #fbbf24;
+    }
+    .race-canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="title">MAMMOTH RACING</div>
-    <div class="controls">
-      <span class="chip-label">참가자</span>
-      <input id="namesInput" type="text" placeholder="이름1, 이름2, 이름3 ..." />
-      <span class="chip-label">카메라</span>
-      <select id="focusRankSelect">
-        <option value="1">1등</option>
-        <option value="2">2등</option>
-        <option value="3">3등</option>
-      </select>
-      <button id="startBtn">▶ START</button>
+
+  <!-- ===== 설정 화면 ===== -->
+  <div class="setup-screen" id="setupScreen">
+    <div class="setup-card">
+      <div class="setup-title">MAMMOTH RACING</div>
+      <div class="setup-subtitle">매머드들의 레이스, 누가 1등일까?</div>
+
+      <div class="field-group">
+        <span class="field-label">참가 매머드 이름</span>
+        <span class="field-hint">쉼표(,) 또는 줄바꿈으로 구분</span>
+        <textarea id="namesInput" placeholder="토르, 블리자드, 썬더, 아이스, 매그마, 스톰"></textarea>
+        <div class="mammoth-count" id="mammothCount">6마리 참가</div>
+      </div>
+
+      <div class="field-group">
+        <span class="field-label">카메라가 따라갈 등수</span>
+        <span class="field-hint">해당 등수 매머드를 화면 중심으로 추적합니다</span>
+        <select id="focusRankSelect"></select>
+      </div>
+
+      <button class="btn-start" id="startBtn">▶  레이스 시작</button>
     </div>
-    <div class="canvas-wrapper">
+  </div>
+
+  <!-- ===== 레이스 화면 ===== -->
+  <div class="race-screen" id="raceScreen">
+    <div class="race-topbar">
+      <button class="btn-pause" id="pauseBtn">⏸ 일시정지</button>
+      <button class="btn-reset" id="resetBtn">↻ 다시시작</button>
+      <button class="btn-back" id="backBtn">← 설정</button>
+    </div>
+    <div class="race-canvas-wrap" id="canvasWrap">
       <canvas id="raceCanvas"></canvas>
     </div>
   </div>
@@ -129,27 +225,30 @@
     let W = 0, H = 0;
 
     function resizeCanvas() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      W = rect.width;
-      H = rect.height;
+      const wrap = document.getElementById('canvasWrap');
+      W = wrap.clientWidth;
+      H = wrap.clientHeight;
       const dpr = window.devicePixelRatio || 1;
       canvas.width = W * dpr;
       canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
 
     let mammoths = [];
     let raceStartTime = null;
     let raceRunning = false;
     let raceFinished = false;
+    let racePaused = false;
+    let pausedAt = 0;
+    let pausedTotal = 0;
     let focusRank = 1;
     let cameraX = 0;
     let lastFrameTime = 0;
-    let snowParticles = [];
+    let cloudParticles = [];
     let dustParticles = [];
     let finishOrder = [];
+    let lastNames = null;
 
     function toMeters(x) {
       return Math.round((x / TRACK_LENGTH) * DISPLAY_METERS);
@@ -161,34 +260,40 @@
       '#26c6da','#ff7043','#66bb6a','#ab47bc'
     ];
 
-    // ===== 눈 =====
-    function initSnow() {
-      snowParticles = [];
-      for (let i = 0; i < 50; i++) {
-        snowParticles.push({
-          x: Math.random() * W * 3 - W,
-          y: Math.random() * H,
-          r: Math.random() * 2.2 + 0.6,
-          sx: Math.random() * 0.3 - 0.15,
-          sy: Math.random() * 0.7 + 0.3,
-          o: Math.random() * 0.4 + 0.15
+    // ===== 구름 =====
+    function initClouds() {
+      cloudParticles = [];
+      for (let i = 0; i < 12; i++) {
+        cloudParticles.push({
+          x: Math.random() * W * 4 - W,
+          y: H * 0.03 + Math.random() * H * 0.18,
+          w: 60 + Math.random() * 80,
+          h: 20 + Math.random() * 15,
+          speed: 0.08 + Math.random() * 0.12,
+          opacity: 0.5 + Math.random() * 0.35
         });
       }
     }
-    function updateSnow() {
-      for (const s of snowParticles) {
-        s.x += s.sx; s.y += s.sy;
-        if (s.y > H) { s.y = -4; s.x = Math.random() * W * 2 - W * 0.5; }
+    function updateClouds() {
+      for (const c of cloudParticles) {
+        c.x += c.speed;
+        if (c.x - c.w > W * 2) c.x = -c.w - W * 0.5;
       }
     }
-    function drawSnow() {
-      for (const s of snowParticles) {
-        const sx = s.x - cameraX * 0.02;
-        if (sx < -5 || sx > W + 5) continue;
-        ctx.globalAlpha = s.o;
+    function drawClouds() {
+      for (const c of cloudParticles) {
+        const sx = c.x - cameraX * 0.01;
+        if (sx + c.w < -20 || sx - c.w > W + 20) continue;
+        ctx.globalAlpha = c.opacity;
         ctx.fillStyle = '#fff';
         ctx.beginPath();
-        ctx.arc(sx, s.y, s.r, 0, Math.PI * 2);
+        ctx.ellipse(sx, c.y, c.w / 2, c.h / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx - c.w * 0.25, c.y + 2, c.w * 0.35, c.h * 0.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx + c.w * 0.25, c.y + 1, c.w * 0.3, c.h * 0.35, 0, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -217,7 +322,7 @@
       for (const d of dustParticles) {
         const sx = d.x - cameraX + W * 0.35;
         if (sx < -15 || sx > W + 15) continue;
-        ctx.globalAlpha = d.life * 0.45;
+        ctx.globalAlpha = d.life * 0.4;
         ctx.fillStyle = d.color;
         ctx.beginPath();
         ctx.arc(sx, d.y, d.r * d.life, 0, Math.PI * 2);
@@ -226,66 +331,134 @@
       ctx.globalAlpha = 1;
     }
 
-    // ===== 배경 =====
+    // ===== 서울 배경 =====
     function drawBackground() {
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.5);
-      skyGrad.addColorStop(0, '#0b1628');
-      skyGrad.addColorStop(0.35, '#1a2744');
-      skyGrad.addColorStop(0.7, '#2d4a7a');
-      skyGrad.addColorStop(1, '#4a7ab5');
+      // 하늘
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.45);
+      skyGrad.addColorStop(0, '#4da6e8');
+      skyGrad.addColorStop(0.4, '#7ec8f0');
+      skyGrad.addColorStop(0.7, '#a8ddf5');
+      skyGrad.addColorStop(1, '#c8ecfa');
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, W, H);
 
-      const seed = 12345;
-      for (let i = 0; i < 35; i++) {
-        const sx = ((seed * (i+1) * 7) % (W * 2)) - cameraX * 0.005;
-        const sy = ((seed * (i+1) * 13) % (H * 0.35));
-        if (sx < -5 || sx > W + 5) continue;
-        ctx.globalAlpha = 0.25 + (i % 5) * 0.1;
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(sx, sy, ((i * 17) % 3) * 0.3 + 0.4, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
+      // 뒤쪽 산 (북한산/관악산 느낌)
+      drawSeoulMountains(H * 0.22, H * 0.12, '#7ba898', 0.01, 160);
+      drawSeoulMountains(H * 0.26, H * 0.10, '#8bb8a0', 0.018, 130);
 
-      drawMountains(H * 0.26, H * 0.2, '#1a2540', 0.015, 180);
-      drawMountains(H * 0.30, H * 0.16, '#1e3050', 0.025, 140);
-      drawMountains(H * 0.36, H * 0.12, '#253d60', 0.04, 110);
+      // 서울 스카이라인
+      drawSeoulSkyline();
 
-      const gy = H * 0.40;
-      const gg = ctx.createLinearGradient(0, gy, 0, H);
-      gg.addColorStop(0, '#c8d8e8');
-      gg.addColorStop(0.15, '#b0c4d8');
-      gg.addColorStop(0.5, '#8aa0b8');
-      gg.addColorStop(1, '#5a7090');
-      ctx.fillStyle = gg;
-      ctx.fillRect(0, gy, W, H - gy);
+      // 녹지대 (트랙 앞 잔디)
+      const groundY = H * 0.38;
+      const groundGrad = ctx.createLinearGradient(0, groundY, 0, H);
+      groundGrad.addColorStop(0, '#7cb860');
+      groundGrad.addColorStop(0.06, '#6aad50');
+      groundGrad.addColorStop(0.15, '#c4a96e');
+      groundGrad.addColorStop(0.3, '#b89860');
+      groundGrad.addColorStop(1, '#a08050');
+      ctx.fillStyle = groundGrad;
+      ctx.fillRect(0, groundY, W, H - groundY);
     }
 
-    function drawMountains(baseY, maxH, color, parallax, segW) {
+    function drawSeoulMountains(baseY, maxH, color, parallax, segW) {
       const offset = cameraX * parallax;
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.moveTo(-10, H);
-      for (let x = -segW; x <= W + segW; x += segW / 3) {
+      for (let x = -segW; x <= W + segW; x += segW / 4) {
         const wx = x + offset;
-        const n = Math.sin(wx * 0.008) * 0.5 + Math.sin(wx * 0.003 + 1.5) * 0.3 + Math.sin(wx * 0.015) * 0.2;
+        const n = Math.sin(wx * 0.006) * 0.5 + Math.sin(wx * 0.003 + 2) * 0.3 + Math.sin(wx * 0.012) * 0.2;
         ctx.lineTo(x, baseY - maxH * (0.5 + n * 0.5));
       }
       ctx.lineTo(W + 10, H);
       ctx.closePath();
       ctx.fill();
+    }
 
-      ctx.fillStyle = 'rgba(255,255,255,0.12)';
-      ctx.beginPath();
-      ctx.moveTo(-10, H);
-      for (let x = -segW; x <= W + segW; x += segW / 3) {
-        const wx = x + offset;
-        const n = Math.sin(wx * 0.008) * 0.5 + Math.sin(wx * 0.003 + 1.5) * 0.3 + Math.sin(wx * 0.015) * 0.2;
-        ctx.lineTo(x, baseY - maxH * (0.5 + n * 0.5) + maxH * 0.15);
+    function drawSeoulSkyline() {
+      const skylineY = H * 0.30;
+      const parallax = 0.025;
+      const offset = cameraX * parallax;
+
+      // 건물 데이터: [x오프셋, 폭, 높이, 색상]
+      const buildings = [
+        [0, 22, 55, '#8090a0'], [30, 18, 40, '#90a0b0'], [55, 25, 65, '#7888a0'],
+        [85, 15, 35, '#a0aab5'], [105, 20, 50, '#8595a5'],
+        [135, 12, 80, '#7080a0'], // 롯데타워 (가늘고 높음)
+        [155, 22, 45, '#95a0b0'], [182, 18, 55, '#8090a5'],
+        [210, 28, 38, '#a0a8b5'], [245, 16, 48, '#8898a8'],
+        [268, 20, 42, '#90a0b0'], [295, 24, 58, '#8090a0'],
+        [325, 14, 36, '#a0a8b5'], [345, 20, 52, '#8595a5'],
+        [375, 18, 44, '#95a0b0'], [400, 22, 60, '#7888a0'],
+        [430, 16, 38, '#a0aab5'], [452, 26, 50, '#8090a0'],
+        [485, 20, 42, '#90a0b0'], [510, 14, 55, '#8595a5'],
+      ];
+
+      const repeatW = 540;
+
+      for (let rep = -1; rep <= Math.ceil(W / repeatW) + 1; rep++) {
+        const baseX = rep * repeatW - (offset % repeatW);
+        buildings.forEach(([bx, bw, bh, col]) => {
+          const sx = baseX + bx;
+          if (sx + bw < -10 || sx > W + 10) return;
+          const by = skylineY - bh;
+
+          ctx.fillStyle = col;
+          ctx.fillRect(sx, by, bw, bh + (H - skylineY) * 0.3);
+
+          // 창문
+          ctx.fillStyle = 'rgba(255,255,255,0.15)';
+          const winW = 3, winH = 3, winGapX = 6, winGapY = 7;
+          for (let wy = by + 5; wy < skylineY - 4; wy += winGapY) {
+            for (let wx = sx + 3; wx < sx + bw - 3; wx += winGapX) {
+              ctx.fillRect(wx, wy, winW, winH);
+            }
+          }
+        });
       }
-      ctx.lineTo(W + 10, H);
+
+      // 남산타워 (고정 위치, 패럴랙스 약하게)
+      const towerOffset = cameraX * 0.02;
+      const towerX = W * 0.55 - (towerOffset % (W * 2));
+
+      if (towerX > -60 && towerX < W + 60) {
+        // 산
+        ctx.fillStyle = '#6a9a58';
+        ctx.beginPath();
+        ctx.moveTo(towerX - 50, skylineY + 5);
+        ctx.quadraticCurveTo(towerX, skylineY - 35, towerX + 50, skylineY + 5);
+        ctx.fill();
+
+        // 타워 기둥
+        ctx.fillStyle = '#d0d0d0';
+        ctx.fillRect(towerX - 2.5, skylineY - 75, 5, 45);
+
+        // 전망대
+        ctx.fillStyle = '#c0c0c8';
+        ctx.beginPath();
+        ctx.roundRect(towerX - 8, skylineY - 80, 16, 12, 3);
+        ctx.fill();
+
+        // 안테나
+        ctx.strokeStyle = '#b0b0b8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(towerX, skylineY - 80);
+        ctx.lineTo(towerX, skylineY - 100);
+        ctx.stroke();
+      }
+
+      // 하단 풀숲
+      ctx.fillStyle = '#5a9a40';
+      ctx.beginPath();
+      ctx.moveTo(0, skylineY + 5);
+      for (let x = 0; x <= W; x += 8) {
+        const treeH = 3 + Math.sin(x * 0.15 + offset * 0.02) * 3 + Math.sin(x * 0.08) * 2;
+        ctx.lineTo(x, skylineY + 5 - treeH);
+      }
+      ctx.lineTo(W, skylineY + 15);
+      ctx.lineTo(0, skylineY + 15);
       ctx.closePath();
       ctx.fill();
     }
@@ -295,24 +468,27 @@
       const tTop = H * 0.42;
       const tBot = H * 0.88;
 
+      // 트랙 본체 (흙길 느낌)
       const tg = ctx.createLinearGradient(0, tTop, 0, tBot);
-      tg.addColorStop(0, '#7a8a9a');
-      tg.addColorStop(0.3, '#8a9aaa');
-      tg.addColorStop(0.5, '#95a5b5');
-      tg.addColorStop(0.7, '#8a9aaa');
-      tg.addColorStop(1, '#6a7a8a');
+      tg.addColorStop(0, '#c4a060');
+      tg.addColorStop(0.3, '#d4b070');
+      tg.addColorStop(0.5, '#dabb78');
+      tg.addColorStop(0.7, '#d4b070');
+      tg.addColorStop(1, '#b89858');
       ctx.fillStyle = tg;
       ctx.fillRect(0, tTop, W, tBot - tTop);
 
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-      ctx.lineWidth = 2;
-      [tTop, tBot].forEach(y => { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); });
+      // 트랙 가장자리 (잔디 경계선)
+      ctx.fillStyle = '#5a9840';
+      ctx.fillRect(0, tTop - 3, W, 4);
+      ctx.fillRect(0, tBot - 1, W, 4);
 
+      // 레인 구분
       if (mammoths.length > 0) {
         const lc = Math.min(LANE_COUNT, mammoths.length);
         const lh = (tBot - tTop) / lc;
-        ctx.setLineDash([10, 8]);
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.setLineDash([8, 6]);
+        ctx.strokeStyle = 'rgba(255,255,255,0.18)';
         ctx.lineWidth = 1;
         for (let i = 1; i < lc; i++) {
           ctx.beginPath(); ctx.moveTo(0, tTop + lh * i); ctx.lineTo(W, tTop + lh * i); ctx.stroke();
@@ -320,50 +496,48 @@
         ctx.setLineDash([]);
       }
 
-      // 거리 마커 (미터 단위)
+      // 거리 마커
       ctx.font = '9px system-ui';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      const meterInterval = 50;
-      for (let m = meterInterval; m < DISPLAY_METERS; m += meterInterval) {
+      for (let m = 50; m < DISPLAY_METERS; m += 50) {
         const worldX = (m / DISPLAY_METERS) * TRACK_LENGTH;
         const sx = worldX - cameraX + W * 0.35;
         if (sx < -10 || sx > W + 10) continue;
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillStyle = 'rgba(120,90,50,0.25)';
         ctx.fillRect(sx - 0.5, tTop, 1, tBot - tTop);
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.fillText(`${m}m`, sx, tBot + 3);
+        ctx.fillStyle = 'rgba(120,90,50,0.5)';
+        ctx.fillText(`${m}m`, sx, tBot + 4);
       }
 
       // 결승선
       const fsx = TRACK_LENGTH - cameraX + W * 0.35;
       if (fsx > -50 && fsx < W + 50) {
-        const ss = 7;
-        const fw = 14;
+        const ss = 7, fw = 14;
         for (let r = 0; r < Math.ceil((tBot - tTop) / ss); r++) {
           for (let c = 0; c < Math.ceil(fw / ss); c++) {
-            ctx.fillStyle = (r + c) % 2 === 0 ? 'rgba(255,255,255,0.9)' : 'rgba(20,20,30,0.9)';
+            ctx.fillStyle = (r + c) % 2 === 0 ? 'rgba(255,255,255,0.9)' : 'rgba(30,30,40,0.85)';
             ctx.fillRect(fsx - fw / 2 + c * ss, tTop + r * ss, ss, ss);
           }
         }
         ctx.font = 'bold 10px system-ui';
-        ctx.fillStyle = '#fbbf24';
+        ctx.fillStyle = '#d4380d';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillText('FINISH', fsx, tTop - 3);
+        ctx.fillText('FINISH', fsx, tTop - 4);
       }
 
       // 스타트
       const ssx = -cameraX + W * 0.35;
       if (ssx > -20 && ssx < W + 20) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
         ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(ssx, tTop); ctx.lineTo(ssx, tBot); ctx.stroke();
         ctx.font = 'bold 9px system-ui';
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillStyle = 'rgba(90,70,40,0.5)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillText('START', ssx, tTop - 3);
+        ctx.fillText('START', ssx, tTop - 4);
       }
     }
 
@@ -375,7 +549,7 @@
       const bounce = Math.sin(phase * 8) * 2 * s;
       const legSwing = Math.sin(phase * 8) * 12;
 
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
       ctx.beginPath();
       ctx.ellipse(0, 16 * s, 26 * s, 5 * s, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -461,7 +635,7 @@
       ctx.beginPath();
       ctx.roundRect(-lw / 2, 0, lw, lh, [0, 0, lw * 0.4, lw * 0.4]);
       ctx.fill();
-      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
       ctx.beginPath();
       ctx.ellipse(0, lh, lw * 0.5, lw * 0.25, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -495,24 +669,22 @@
           continue;
         }
 
-        const phase = raceRunning ? (now - raceStartTime) / 1000 + m.index * 0.5 : 0;
+        const phase = raceRunning && !racePaused ? (now - raceStartTime - pausedTotal) / 1000 + m.index * 0.5 : 0;
         drawMammoth(sx, ly, m, scale, m.finished ? 0 : phase);
-
-        if (raceRunning && !m.finished) spawnDust(m.x, ly, 'rgba(190,200,210,0.35)');
+        if (raceRunning && !m.finished && !racePaused) spawnDust(m.x, ly, 'rgba(180,160,120,0.3)');
 
         ctx.font = `bold ${10 * scale}px system-ui`;
-        const tw = ctx.measureText(m.name).width;
-        const lx = sx - (tw + 10) / 2;
+        const txtW = ctx.measureText(m.name).width;
+        const labX = sx - (txtW + 10) / 2;
         const labY = ly - 28 * scale;
         const labH = 14 * scale;
 
-        ctx.fillStyle = 'rgba(10,14,26,0.82)';
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
         ctx.beginPath();
-        ctx.roundRect(lx, labY - labH / 2, tw + 10, labH, 999);
+        ctx.roundRect(labX, labY - labH / 2, txtW + 10, labH, 999);
         ctx.fill();
         ctx.strokeStyle = m.color; ctx.lineWidth = 1.2; ctx.stroke();
-
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = '#1e293b';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(m.name, sx, labY);
       }
@@ -529,7 +701,7 @@
         const y = startY + i * gap;
         const x = side === 'left' ? 6 : W - 6;
         const px = side === 'left' ? x + 9 : x - 82;
-        ctx.fillStyle = 'rgba(10,14,26,0.85)';
+        ctx.fillStyle = 'rgba(255,255,255,0.82)';
         ctx.beginPath(); ctx.roundRect(px, y - 8, 73, 16, 999); ctx.fill();
         ctx.strokeStyle = m.color; ctx.lineWidth = 1.2; ctx.stroke();
 
@@ -542,32 +714,31 @@
         }
         ctx.closePath(); ctx.fill();
 
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = '#1e293b';
         ctx.textAlign = side === 'left' ? 'left' : 'right';
         ctx.textBaseline = 'middle';
         ctx.fillText(m.name, side === 'left' ? x + 13 : x - 13, y);
       });
     }
 
-    // ===== 미니맵 + 순위 오버레이 (캔버스 위) =====
+    // ===== 미니맵 + 순위 오버레이 =====
     function drawOverlayPanel() {
       const pad = 6;
-      const panelW = Math.min(W * 0.42, 190);
-      const miniH = 30;
+      const panelW = Math.min(W * 0.42, 180);
+      const miniH = 28;
       const x = pad, y = pad;
 
-      // 미니맵
-      ctx.fillStyle = 'rgba(8,12,24,0.88)';
+      ctx.fillStyle = 'rgba(255,255,255,0.88)';
       ctx.beginPath(); ctx.roundRect(x, y, panelW, miniH, 8); ctx.fill();
-      ctx.strokeStyle = 'rgba(148,163,184,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1; ctx.stroke();
 
       const ip = 8;
       const tx = x + ip, ty = y + miniH / 2, tiw = panelW - ip * 2;
 
-      ctx.strokeStyle = 'rgba(148,163,184,0.4)'; ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(100,100,100,0.3)'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + tiw, ty); ctx.stroke();
 
-      ctx.fillStyle = '#fbbf24';
+      ctx.fillStyle = '#d4380d';
       ctx.fillRect(tx + tiw - 1, ty - 4, 2, 8);
 
       for (const m of mammoths) {
@@ -579,29 +750,29 @@
       const cs = Math.max(0, cameraX / TRACK_LENGTH);
       const ce = Math.min(1, (cameraX + W * 0.6) / TRACK_LENGTH);
       const cx1 = tx + tiw * cs, cx2 = tx + tiw * ce;
-      ctx.fillStyle = 'rgba(248,113,22,0.12)';
+      ctx.fillStyle = 'rgba(249,115,22,0.12)';
       ctx.fillRect(cx1, ty - 5, cx2 - cx1, 10);
-      ctx.strokeStyle = 'rgba(248,113,22,0.4)'; ctx.lineWidth = 0.8;
+      ctx.strokeStyle = 'rgba(249,115,22,0.35)'; ctx.lineWidth = 0.8;
       ctx.strokeRect(cx1, ty - 5, cx2 - cx1, 10);
 
       ctx.font = 'bold 7px system-ui';
-      ctx.fillStyle = 'rgba(148,163,184,0.6)';
+      ctx.fillStyle = '#94a3b8';
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.fillText('MAP', x + 5, y + 3);
 
-      // 순위 리스트
+      // 순위
       if (!mammoths.length) return;
       const ranking = getCurrentRanking();
       const rankY = y + miniH + 4;
-      const rowH = 17;
+      const rowH = 16;
       const rankH = ranking.length * rowH + 8;
 
-      ctx.fillStyle = 'rgba(8,12,24,0.85)';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
       ctx.beginPath(); ctx.roundRect(x, rankY, panelW, rankH, 8); ctx.fill();
-      ctx.strokeStyle = 'rgba(148,163,184,0.2)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,0,0,0.08)'; ctx.lineWidth = 1; ctx.stroke();
 
       ctx.font = 'bold 7px system-ui';
-      ctx.fillStyle = 'rgba(148,163,184,0.5)';
+      ctx.fillStyle = '#94a3b8';
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.fillText(raceFinished ? 'RESULT' : 'RANK', x + 5, rankY + 2);
 
@@ -611,38 +782,32 @@
         const isWinner = raceFinished && rank === 1;
 
         if (isWinner) {
-          ctx.fillStyle = 'rgba(251,191,36,0.12)';
+          ctx.fillStyle = 'rgba(251,191,36,0.18)';
           ctx.beginPath(); ctx.roundRect(x + 3, ry + 1, panelW - 6, rowH - 2, 4); ctx.fill();
         } else if (isFocus) {
-          ctx.fillStyle = 'rgba(248,113,22,0.1)';
+          ctx.fillStyle = 'rgba(249,115,22,0.12)';
           ctx.beginPath(); ctx.roundRect(x + 3, ry + 1, panelW - 6, rowH - 2, 4); ctx.fill();
         }
 
-        // 등수
         ctx.font = 'bold 10px system-ui';
-        ctx.fillStyle = rank <= 3 ? '#fbbf24' : 'rgba(148,163,184,0.7)';
+        ctx.fillStyle = rank <= 3 ? '#d4380d' : '#94a3b8';
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.fillText(`${rank}`, x + 8, ry + rowH / 2 + 1);
 
-        // 색 점
         ctx.fillStyle = m.color;
-        ctx.beginPath(); ctx.arc(x + 24, ry + rowH / 2 + 1, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + 22, ry + rowH / 2 + 1, 3.5, 0, Math.PI * 2); ctx.fill();
 
-        // 이름
         ctx.font = '10px system-ui';
-        ctx.fillStyle = '#e5e7eb';
+        ctx.fillStyle = '#1e293b';
         ctx.textAlign = 'left';
-        const maxNameW = panelW - 80;
-        let displayName = m.name;
-        while (ctx.measureText(displayName).width > maxNameW && displayName.length > 2) {
-          displayName = displayName.slice(0, -1);
-        }
-        if (displayName !== m.name) displayName += '…';
-        ctx.fillText(displayName, x + 33, ry + rowH / 2 + 1);
+        const maxNW = panelW - 75;
+        let dn = m.name;
+        while (ctx.measureText(dn).width > maxNW && dn.length > 2) dn = dn.slice(0, -1);
+        if (dn !== m.name) dn += '…';
+        ctx.fillText(dn, x + 31, ry + rowH / 2 + 1);
 
-        // 거리
         ctx.font = '9px system-ui';
-        ctx.fillStyle = 'rgba(148,163,184,0.7)';
+        ctx.fillStyle = '#64748b';
         ctx.textAlign = 'right';
         ctx.fillText(m.finished ? `${DISPLAY_METERS}m` : `${toMeters(m.x)}m`, x + panelW - 6, ry + rowH / 2 + 1);
       });
@@ -652,103 +817,69 @@
     function initRace(names) {
       const n = names.length;
       if (!n) return;
-
-      mammoths = [];
-      finishOrder = [];
-      dustParticles = [];
+      mammoths = []; finishOrder = []; dustParticles = [];
       const lc = Math.min(LANE_COUNT, n);
+      lastNames = [...names];
 
       for (let i = 0; i < n; i++) {
         mammoths.push({
           name: names[i].trim() || `매머드 ${i + 1}`,
           color: MAMMOTH_COLORS[i % MAMMOTH_COLORS.length],
-          laneIndex: i % lc,
-          x: 0,
-          velocity: BASE_SPEED,
-          finished: false,
-          index: i,
-          burstTimer: 0,
-          burstAmount: 0,
-          stumbleTimer: 0
+          laneIndex: i % lc, x: 0, velocity: BASE_SPEED,
+          finished: false, index: i,
+          burstTimer: 0, burstAmount: 0, stumbleTimer: 0
         });
       }
 
-      initSnow();
+      initClouds();
       raceStartTime = performance.now();
-      raceRunning = true;
-      raceFinished = false;
-      cameraX = 0;
-      lastFrameTime = raceStartTime;
+      raceRunning = true; raceFinished = false;
+      racePaused = false; pausedAt = 0; pausedTotal = 0;
+      cameraX = 0; lastFrameTime = raceStartTime;
+      resizeCanvas();
       requestAnimationFrame(loop);
     }
 
     function updateRace(now) {
       if (!raceRunning) return;
-
-      const elapsed = now - raceStartTime;
+      const elapsed = now - raceStartTime - pausedTotal;
       const dt = Math.min(now - lastFrameTime, 50);
       lastFrameTime = now;
       let allFinished = true;
 
       for (const m of mammoths) {
         if (m.finished) continue;
-
-        // 강한 랜덤 노이즈 (순위 변동 핵심)
         const noise = (Math.random() - 0.5) * 1.2;
         m.velocity += noise * (BASE_SPEED * 0.15);
-
-        // 약한 평균 회귀 (기본 속도 BASE_SPEED로, 개인차 없음)
         m.velocity += (BASE_SPEED - m.velocity) * 0.008;
 
-        // 랜덤 버스트 (갑자기 가속)
-        if (m.burstTimer > 0) {
-          m.velocity += m.burstAmount;
-          m.burstTimer -= dt;
-        } else if (Math.random() < 0.003) {
-          m.burstTimer = 800 + Math.random() * 1200;
-          m.burstAmount = BASE_SPEED * (0.05 + Math.random() * 0.12);
-        }
+        if (m.burstTimer > 0) { m.velocity += m.burstAmount; m.burstTimer -= dt; }
+        else if (Math.random() < 0.003) { m.burstTimer = 800 + Math.random() * 1200; m.burstAmount = BASE_SPEED * (0.05 + Math.random() * 0.12); }
 
-        // 랜덤 슬로우 (갑자기 감속)
-        if (m.stumbleTimer > 0) {
-          m.velocity *= 0.985;
-          m.stumbleTimer -= dt;
-        } else if (Math.random() < 0.002) {
-          m.stumbleTimer = 500 + Math.random() * 800;
-        }
+        if (m.stumbleTimer > 0) { m.velocity *= 0.985; m.stumbleTimer -= dt; }
+        else if (Math.random() < 0.002) { m.stumbleTimer = 500 + Math.random() * 800; }
 
-        // 클램프
         m.velocity = Math.max(BASE_SPEED * 0.7, Math.min(BASE_SPEED * 1.4, m.velocity));
 
-        // 막판 보정 (뒤처진 매머드 약간 추격 기회)
         const remaining = RACE_DURATION - elapsed;
         if (remaining < 6000 && remaining > 0) {
-          const progress = m.x / TRACK_LENGTH;
-          m.velocity += (1 - progress) * (6000 - remaining) / 6000 * (BASE_SPEED * 0.1);
+          m.velocity += (1 - m.x / TRACK_LENGTH) * (6000 - remaining) / 6000 * (BASE_SPEED * 0.1);
         }
 
         m.x += (m.velocity * dt) / 1000;
-        if (m.x >= TRACK_LENGTH) {
-          m.x = TRACK_LENGTH;
-          m.finished = true;
-          finishOrder.push(m);
-        } else {
-          allFinished = false;
-        }
+        if (m.x >= TRACK_LENGTH) { m.x = TRACK_LENGTH; m.finished = true; finishOrder.push(m); }
+        else allFinished = false;
       }
 
-      // 카메라
       const ranking = getCurrentRanking();
       const fe = ranking[focusRank - 1] || ranking[0];
       if (fe) {
-        const ideal = fe.m.x - W * 0.32;
-        const clamped = Math.max(-W * 0.1, Math.min(TRACK_LENGTH - W * 0.5, ideal));
+        const clamped = Math.max(-W * 0.1, Math.min(TRACK_LENGTH - W * 0.5, fe.m.x - W * 0.32));
         cameraX += (clamped - cameraX) * 0.08;
       }
 
       if (elapsed >= RACE_DURATION * 1.8 || allFinished) {
-        raceRunning = false;
-        raceFinished = true;
+        raceRunning = false; raceFinished = true;
       }
     }
 
@@ -759,70 +890,133 @@
         .map((e, i) => ({ rank: i + 1, m: e.m }));
     }
 
-    // ===== 결과 오버레이 =====
     function drawResultBanner() {
       if (!raceFinished || !finishOrder.length) return;
       const winner = finishOrder[0];
       if (!winner) return;
-
-      ctx.fillStyle = 'rgba(8,12,24,0.55)';
-      ctx.fillRect(0, 0, W, H * 0.1);
-
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillRect(0, 0, W, H * 0.08);
       const fs = Math.min(W * 0.04, 18);
       ctx.font = `bold ${fs}px system-ui`;
-      ctx.fillStyle = '#fbbf24';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`1st  ${winner.name}`, W / 2, H * 0.05);
+      ctx.fillStyle = '#d4380d';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(`1st  ${winner.name}`, W / 2, H * 0.04);
     }
 
-    // ===== 렌더 =====
+    function drawPausedOverlay() {
+      if (!racePaused) return;
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillRect(0, H * 0.45, W, H * 0.1);
+      ctx.font = `bold ${Math.min(W * 0.06, 28)}px system-ui`;
+      ctx.fillStyle = '#1e293b';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('PAUSED', W / 2, H * 0.5);
+    }
+
     function render(now) {
       ctx.clearRect(0, 0, W, H);
       drawBackground();
+      drawClouds();
       drawTrack();
       drawDust();
       drawMammothsAndIndicators(now);
-      drawSnow();
       drawOverlayPanel();
       drawResultBanner();
+      drawPausedOverlay();
     }
 
     function loop(now) {
       if (!mammoths.length) { render(performance.now()); return; }
-      updateRace(now);
-      updateSnow();
-      updateDust();
+      if (!racePaused) { updateRace(now); updateClouds(); updateDust(); }
       render(now);
-      if (raceRunning) {
-        requestAnimationFrame(loop);
-      } else {
-        render(performance.now());
-      }
+      if (raceRunning) requestAnimationFrame(loop);
+      else render(performance.now());
     }
 
-    requestAnimationFrame(() => render(performance.now()));
-
-    // ===== UI =====
+    // ===== 화면 전환 =====
+    const setupScreen = document.getElementById('setupScreen');
+    const raceScreen = document.getElementById('raceScreen');
     const namesInput = document.getElementById('namesInput');
     const focusRankSelect = document.getElementById('focusRankSelect');
     const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const backBtn = document.getElementById('backBtn');
+    const mammothCountEl = document.getElementById('mammothCount');
 
+    function parseNames() {
+      const raw = namesInput.value.trim();
+      if (!raw) return ['토르', '블리자드', '썬더', '아이스', '매그마', '스톰'];
+      return raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+    }
+
+    function setCameraOptions(count) {
+      const cur = parseInt(focusRankSelect.value, 10) || 1;
+      focusRankSelect.innerHTML = '';
+      for (let i = 1; i <= count; i++) {
+        const o = document.createElement('option');
+        o.value = String(i); o.textContent = `${i}등`;
+        focusRankSelect.appendChild(o);
+      }
+      focusRankSelect.value = String(Math.max(1, Math.min(count, cur)));
+      focusRank = parseInt(focusRankSelect.value, 10);
+    }
+
+    function updateCount() {
+      const names = parseNames();
+      mammothCountEl.textContent = `${names.length}마리 참가`;
+      setCameraOptions(names.length);
+    }
+
+    namesInput.addEventListener('input', updateCount);
     focusRankSelect.addEventListener('change', () => {
       focusRank = parseInt(focusRankSelect.value, 10) || 1;
     });
 
+    function showRaceScreen() {
+      setupScreen.classList.add('hidden');
+      raceScreen.classList.add('active');
+      pauseBtn.textContent = '⏸ 일시정지';
+    }
+    function showSetupScreen() {
+      raceScreen.classList.remove('active');
+      setupScreen.classList.remove('hidden');
+      raceRunning = false; racePaused = false;
+    }
+
     startBtn.addEventListener('click', () => {
-      const raw = namesInput.value.trim();
-      let names = raw
-        ? raw.split(',').map(s => s.trim()).filter(Boolean)
-        : ['토르', '블리자드', '썬더', '아이스', '매그마', '스톰'];
+      const names = parseNames();
       if (!names.length) return;
-      focusRank = parseInt(focusRankSelect.value, 10) || 1;
-      startBtn.disabled = true;
-      initRace(names);
-      setTimeout(() => { startBtn.disabled = false; }, RACE_DURATION + 2000);
+      setCameraOptions(names.length);
+      showRaceScreen();
+      setTimeout(() => initRace(names), 50);
     });
+
+    pauseBtn.addEventListener('click', () => {
+      if (!raceRunning) return;
+      if (!racePaused) {
+        racePaused = true; pausedAt = performance.now();
+        pauseBtn.textContent = '▶ 재개';
+      } else {
+        racePaused = false;
+        pausedTotal += (performance.now() - pausedAt);
+        lastFrameTime = performance.now();
+        pausedAt = 0;
+        pauseBtn.textContent = '⏸ 일시정지';
+        requestAnimationFrame(loop);
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      const names = lastNames && lastNames.length ? lastNames : parseNames();
+      if (!names.length) return;
+      pauseBtn.textContent = '⏸ 일시정지';
+      initRace(names);
+    });
+
+    backBtn.addEventListener('click', showSetupScreen);
+
+    updateCount();
   </script>
 </body>
 </html>
