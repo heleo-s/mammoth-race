@@ -93,7 +93,7 @@
       background: #0f172a;
       box-shadow: 0 8px 30px rgba(0,0,0,0.5);
       width: 100%;
-      aspect-ratio: 4 / 3;
+      aspect-ratio: 9 / 16;
     }
     canvas { width: 100%; height: 100%; display: block; touch-action: none; }
   </style>
@@ -718,7 +718,7 @@
         }
 
         // 클램프
-        m.velocity = Math.max(BASE_SPEED * 0.35, Math.min(BASE_SPEED * 2.0, m.velocity));
+        m.velocity = Math.max(BASE_SPEED * 0.7, Math.min(BASE_SPEED * 1.4, m.velocity));
 
         // 막판 보정 (뒤처진 매머드 약간 추격 기회)
         const remaining = RACE_DURATION - elapsed;
