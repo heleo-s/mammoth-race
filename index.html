@@ -66,23 +66,6 @@
       font-size: 0.68rem;
       color: #94a3b8;
     }
-    .setup-card textarea {
-      width: 100%;
-      min-height: 100px;
-      border-radius: 12px;
-      border: 1.5px solid #cbd5e1;
-      background: #f8fafc;
-      color: #1e293b;
-      font-size: 0.85rem;
-      padding: 10px 12px;
-      outline: none;
-      resize: vertical;
-      font-family: inherit;
-      line-height: 1.6;
-      transition: border-color 0.2s;
-    }
-    .setup-card textarea:focus { border-color: #f97316; }
-    .setup-card textarea::placeholder { color: #94a3b8; }
     .setup-card select {
       width: 100%;
       border-radius: 12px;
@@ -97,6 +80,102 @@
       -webkit-appearance: none;
     }
     .setup-card select:focus { border-color: #f97316; }
+
+    /* 매머드 행 목록 */
+    .mammoth-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mammoth-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 8px 10px;
+      border: 1.5px solid #e2e8f0;
+      transition: border-color 0.2s;
+    }
+    .mammoth-row:focus-within { border-color: #f97316; }
+    .mammoth-row-num {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #94a3b8;
+      min-width: 18px;
+      text-align: center;
+    }
+    .mammoth-row input[type="color"] {
+      width: 28px;
+      height: 28px;
+      border: 2px solid #e2e8f0;
+      border-radius: 50%;
+      padding: 0;
+      cursor: pointer;
+      background: none;
+      flex-shrink: 0;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .mammoth-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    .mammoth-row input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+    .mammoth-row input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
+    .mammoth-row input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #1e293b;
+      font-size: 0.85rem;
+      padding: 6px 10px;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .mammoth-row input[type="text"]:focus { border-color: #f97316; }
+    .mammoth-row input[type="text"]::placeholder { color: #94a3b8; }
+    .btn-remove-mammoth {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: none;
+      background: #fee2e2;
+      color: #ef4444;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s;
+      padding: 0;
+      line-height: 1;
+    }
+    .btn-remove-mammoth:active { background: #fca5a5; }
+    .btn-add-mammoth {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      border: 2px dashed #cbd5e1;
+      background: transparent;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-add-mammoth:hover { border-color: #f97316; color: #f97316; }
+    .btn-add-mammoth:active { transform: scale(0.98); }
+    .btn-add-mammoth[disabled] { opacity: 0.35; cursor: default; border-color: #e2e8f0; color: #94a3b8; }
+
+    .mammoth-count {
+      text-align: center;
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+
     .btn-start {
       width: 100%;
       padding: 14px;
@@ -112,12 +191,6 @@
       letter-spacing: 0.05em;
     }
     .btn-start:active { transform: scale(0.98); box-shadow: 0 3px 10px rgba(249,115,22,0.25); }
-    .mammoth-count {
-      text-align: center;
-      font-size: 0.75rem;
-      color: #64748b;
-      margin-top: -8px;
-    }
 
     /* ===== 레이스 화면 ===== */
     .race-screen {
@@ -185,10 +258,11 @@
       <div class="setup-subtitle">매머드들의 레이스, 누가 1등일까?</div>
 
       <div class="field-group">
-        <span class="field-label">참가 매머드 이름</span>
-        <span class="field-hint">쉼표(,) 또는 줄바꿈으로 구분</span>
-        <textarea id="namesInput" placeholder="토르, 블리자드, 썬더, 아이스, 매그마, 스톰"></textarea>
-        <div class="mammoth-count" id="mammothCount">6마리 참가</div>
+        <span class="field-label">참가 매머드</span>
+        <span class="field-hint">이름과 색상을 설정하세요 (최대 12마리)</span>
+        <div class="mammoth-list" id="mammothList"></div>
+        <button class="btn-add-mammoth" id="addMammothBtn">+ 매머드 추가</button>
+        <div class="mammoth-count" id="mammothCount">3마리 참가</div>
       </div>
 
       <div class="field-group">
@@ -249,6 +323,7 @@
     let dustParticles = [];
     let finishOrder = [];
     let lastNames = null;
+    let lastColors = null;
 
     function toMeters(x) {
       return Math.round((x / TRACK_LENGTH) * DISPLAY_METERS);
@@ -814,17 +889,18 @@
     }
 
     // ===== 레이스 로직 =====
-    function initRace(names) {
+    function initRace(names, colors) {
       const n = names.length;
       if (!n) return;
       mammoths = []; finishOrder = []; dustParticles = [];
       const lc = Math.min(LANE_COUNT, n);
       lastNames = [...names];
+      lastColors = colors ? [...colors] : null;
 
       for (let i = 0; i < n; i++) {
         mammoths.push({
           name: names[i].trim() || `매머드 ${i + 1}`,
-          color: MAMMOTH_COLORS[i % MAMMOTH_COLORS.length],
+          color: (colors && colors[i]) ? colors[i] : MAMMOTH_COLORS[i % MAMMOTH_COLORS.length],
           laneIndex: i % lc, x: 0, velocity: BASE_SPEED,
           finished: false, index: i,
           burstTimer: 0, burstAmount: 0, stumbleTimer: 0
@@ -933,10 +1009,11 @@
       else render(performance.now());
     }
 
-    // ===== 화면 전환 =====
+    // ===== 화면 전환 + 설정 UI =====
     const setupScreen = document.getElementById('setupScreen');
     const raceScreen = document.getElementById('raceScreen');
-    const namesInput = document.getElementById('namesInput');
+    const mammothListEl = document.getElementById('mammothList');
+    const addMammothBtn = document.getElementById('addMammothBtn');
     const focusRankSelect = document.getElementById('focusRankSelect');
     const startBtn = document.getElementById('startBtn');
     const pauseBtn = document.getElementById('pauseBtn');
@@ -944,10 +1021,102 @@
     const backBtn = document.getElementById('backBtn');
     const mammothCountEl = document.getElementById('mammothCount');
 
-    function parseNames() {
-      const raw = namesInput.value.trim();
-      if (!raw) return ['토르', '블리자드', '썬더', '아이스', '매그마', '스톰'];
-      return raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+    const MAX_MAMMOTHS = 12;
+    const INITIAL_COUNT = 3;
+    const DEFAULT_NAMES = ['토르','블리자드','썬더','아이스','매그마','스톰','루비','노바','타이탄','제트','코코','미스트'];
+
+    let usedColors = new Set();
+
+    function getAvailableColor() {
+      for (const c of MAMMOTH_COLORS) {
+        if (!usedColors.has(c)) { usedColors.add(c); return c; }
+      }
+      const fallback = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+      usedColors.add(fallback);
+      return fallback;
+    }
+
+    function releaseColor(color) {
+      usedColors.delete(color);
+    }
+
+    function getMammothRows() {
+      return mammothListEl.querySelectorAll('.mammoth-row');
+    }
+
+    function updateMammothUI() {
+      const rows = getMammothRows();
+      const count = rows.length;
+      mammothCountEl.textContent = `${count}마리 참가`;
+      addMammothBtn.disabled = count >= MAX_MAMMOTHS;
+      rows.forEach((row, i) => {
+        row.querySelector('.mammoth-row-num').textContent = `${i + 1}`;
+        const removeBtn = row.querySelector('.btn-remove-mammoth');
+        removeBtn.style.visibility = count <= 2 ? 'hidden' : 'visible';
+      });
+      setCameraOptions(count);
+    }
+
+    function createMammothRow(name, color) {
+      const row = document.createElement('div');
+      row.className = 'mammoth-row';
+
+      const num = document.createElement('span');
+      num.className = 'mammoth-row-num';
+      num.textContent = '1';
+
+      const colorInput = document.createElement('input');
+      colorInput.type = 'color';
+      colorInput.value = color;
+      colorInput.addEventListener('input', () => {
+        releaseColor(color);
+        color = colorInput.value;
+        usedColors.add(color);
+      });
+
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.placeholder = '매머드 이름';
+      nameInput.value = name;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'btn-remove-mammoth';
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('click', () => {
+        releaseColor(colorInput.value);
+        row.remove();
+        updateMammothUI();
+      });
+
+      row.appendChild(num);
+      row.appendChild(colorInput);
+      row.appendChild(nameInput);
+      row.appendChild(removeBtn);
+
+      return row;
+    }
+
+    function addMammoth(name, color) {
+      if (getMammothRows().length >= MAX_MAMMOTHS) return;
+      if (!color) color = getAvailableColor();
+      if (!name) {
+        const existingNames = new Set();
+        getMammothRows().forEach(r => existingNames.add(r.querySelector('input[type="text"]').value));
+        name = DEFAULT_NAMES.find(n => !existingNames.has(n)) || `매머드 ${getMammothRows().length + 1}`;
+      }
+      const row = createMammothRow(name, color);
+      mammothListEl.appendChild(row);
+      updateMammothUI();
+    }
+
+    function collectMammothData() {
+      const data = [];
+      getMammothRows().forEach(row => {
+        const name = row.querySelector('input[type="text"]').value.trim() || `매머드 ${data.length + 1}`;
+        const color = row.querySelector('input[type="color"]').value;
+        data.push({ name, color });
+      });
+      return data;
     }
 
     function setCameraOptions(count) {
@@ -962,16 +1131,11 @@
       focusRank = parseInt(focusRankSelect.value, 10);
     }
 
-    function updateCount() {
-      const names = parseNames();
-      mammothCountEl.textContent = `${names.length}마리 참가`;
-      setCameraOptions(names.length);
-    }
-
-    namesInput.addEventListener('input', updateCount);
     focusRankSelect.addEventListener('change', () => {
       focusRank = parseInt(focusRankSelect.value, 10) || 1;
     });
+
+    addMammothBtn.addEventListener('click', () => addMammoth());
 
     function showRaceScreen() {
       setupScreen.classList.add('hidden');
@@ -985,12 +1149,20 @@
     }
 
     startBtn.addEventListener('click', () => {
-      const names = parseNames();
-      if (!names.length) return;
-      setCameraOptions(names.length);
+      const data = collectMammothData();
+      if (data.length < 2) return;
+      setCameraOptions(data.length);
       showRaceScreen();
-      setTimeout(() => initRace(names), 50);
+      setTimeout(() => initRaceWithData(data), 50);
     });
+
+    function initRaceWithData(data) {
+      const names = data.map(d => d.name);
+      const colors = data.map(d => d.color);
+      lastNames = names;
+      lastColors = colors;
+      initRace(names, colors);
+    }
 
     pauseBtn.addEventListener('click', () => {
       if (!raceRunning) return;
@@ -1008,15 +1180,17 @@
     });
 
     resetBtn.addEventListener('click', () => {
-      const names = lastNames && lastNames.length ? lastNames : parseNames();
-      if (!names.length) return;
+      if (!lastNames || !lastNames.length) return;
       pauseBtn.textContent = '⏸ 일시정지';
-      initRace(names);
+      initRace(lastNames, lastColors);
     });
 
     backBtn.addEventListener('click', showSetupScreen);
 
-    updateCount();
+    // 초기 매머드 3마리 생성
+    for (let i = 0; i < INITIAL_COUNT; i++) {
+      addMammoth(DEFAULT_NAMES[i], MAMMOTH_COLORS[i])
+    }
   </script>
 </body>
 </html>
