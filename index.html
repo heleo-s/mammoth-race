@@ -706,17 +706,6 @@
         const phase = raceRunning && !racePaused ? (now - raceStartTime - pausedTotal) / 1000 + m.index * 0.5 : 0;
         drawMammoth(sx, ly, m, scale, m.finished ? 0 : phase);
 
-        // 충돌 이펙트 (빨간 원 플래시)
-        if (m.collideTimer > 0) {
-          ctx.globalAlpha = Math.min(m.collideTimer / 300, 0.35);
-          ctx.strokeStyle = '#ef4444';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(sx, ly, 20 * scale, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.globalAlpha = 1;
-        }
-
         if (raceRunning && !m.finished && !racePaused) spawnDust(m.x, ly, 'rgba(180,160,120,0.3)');
 
         ctx.font = `bold ${10 * scale}px system-ui`;
@@ -874,6 +863,7 @@
           color: (colors && colors[i]) ? colors[i] : MAMMOTH_COLORS[i % MAMMOTH_COLORS.length],
           laneIndex: i % lc, x: 0, velocity: BASE_SPEED,
           z: (i / Math.max(1, n - 1)),
+          zTarget: (i / Math.max(1, n - 1)),
           zVel: 0,
           colliding: false,
           collideTimer: 0,
@@ -898,19 +888,23 @@
       lastFrameTime = now;
       let allFinished = true;
 
-      // Z축 이동 (자유 드리프트)
+      // Z축 이동 (부드러운 리니어 이동: zTarget → z)
+      // dt 기반으로 항상 비슷한 체감 속도 유지
+      const zAlpha = 1 - Math.exp(-dt / 260);
       for (const m of mammoths) {
         if (m.finished) continue;
-        m.zVel += (Math.random() - 0.5) * 0.006;
-        m.zVel *= 0.92;
-        m.zVel = Math.max(-0.012, Math.min(0.012, m.zVel));
-        m.z += m.zVel;
+        // 타겟을 천천히 흔들어주고(뚝뚝 끊김 방지) 그 쪽으로 리니어 이동
+        m.zTarget += (Math.random() - 0.5) * 0.015;
+        m.zTarget = Math.max(0.04, Math.min(0.96, m.zTarget));
+        // 충돌 반발은 zVel로 순간적으로 얹고, 빠르게 감쇠
+        m.zVel *= 0.86;
+        m.z += (m.zTarget - m.z) * zAlpha + m.zVel;
         m.z = Math.max(0.02, Math.min(0.98, m.z));
       }
 
       // 충돌 판정 (x와 z 모두 가까우면 서로 감속)
       const COLLISION_X = 60;
-      const COLLISION_Z = 0.12;
+      const COLLISION_Z = 0.11;
       for (const m of mammoths) m.colliding = false;
 
       for (let i = 0; i < mammoths.length; i++) {
@@ -924,35 +918,60 @@
           if (dx < COLLISION_X && dz < COLLISION_Z) {
             a.colliding = true;
             b.colliding = true;
-            // z 방향으로 서로 밀어냄
-            const pushZ = (COLLISION_Z - dz) * 0.003;
-            if (a.z < b.z) { a.zVel -= pushZ; b.zVel += pushZ; }
-            else { a.zVel += pushZ; b.zVel -= pushZ; }
+            // z 방향으로 "팍" 밀어냄 (즉시 분리 + 반발)
+            const overlap = (COLLISION_Z - dz);
+            const dir = (a.z <= b.z) ? -1 : 1;
+            const sep = overlap * 0.55; // 즉시 분리량 (체감용)
+            a.z += dir * sep;
+            b.z -= dir * sep;
+            a.z = Math.max(0.02, Math.min(0.98, a.z));
+            b.z = Math.max(0.02, Math.min(0.98, b.z));
+            // 타겟도 함께 밀어서 다시 겹치려는 경향을 줄임
+            a.zTarget = Math.max(0.04, Math.min(0.96, a.zTarget + dir * sep));
+            b.zTarget = Math.max(0.04, Math.min(0.96, b.zTarget - dir * sep));
+            // 순간 반발 속도
+            const impulse = overlap * 0.03;
+            a.zVel += dir * impulse;
+            b.zVel -= dir * impulse;
           }
         }
       }
 
       for (const m of mammoths) {
         if (m.finished) continue;
-        const noise = (Math.random() - 0.5) * 1.2;
-        m.velocity += noise * (BASE_SPEED * 0.15);
-        m.velocity += (BASE_SPEED - m.velocity) * 0.008;
+        // 목표 속도(desired)를 만들고, 실제 속도는 비대칭으로 따라가게(가속 느림/감속 빠름)
+        let desired = m.velocity;
 
-        if (m.burstTimer > 0) { m.velocity += m.burstAmount; m.burstTimer -= dt; }
+        // 랜덤 노이즈 (짧게 흔들림)
+        desired += (Math.random() - 0.5) * (BASE_SPEED * 0.18);
+
+        // 기본 속도 쪽으로 약하게 당김
+        desired += (BASE_SPEED - desired) * 0.02;
+
+        // 버스트
+        if (m.burstTimer > 0) { desired += m.burstAmount; m.burstTimer -= dt; }
         else if (Math.random() < 0.003) { m.burstTimer = 800 + Math.random() * 1200; m.burstAmount = BASE_SPEED * (0.05 + Math.random() * 0.12); }
 
-        if (m.stumbleTimer > 0) { m.velocity *= 0.985; m.stumbleTimer -= dt; }
+        // 슬로우(실수)
+        if (m.stumbleTimer > 0) { desired -= BASE_SPEED * 0.22; m.stumbleTimer -= dt; }
         else if (Math.random() < 0.002) { m.stumbleTimer = 500 + Math.random() * 800; }
 
-        // 충돌 중이면 감속
+        // 충돌 중이면 강한 감속 체감
         if (m.colliding) {
-          m.velocity *= 0.965;
-          m.collideTimer = 300;
+          desired -= BASE_SPEED * 0.35;
+          m.collideTimer = 380;
         } else if (m.collideTimer > 0) {
           m.collideTimer -= dt;
         }
 
-        m.velocity = Math.max(BASE_SPEED * 0.7, Math.min(BASE_SPEED * 1.4, m.velocity));
+        // 클램프(원래 범위 유지)
+        desired = Math.max(BASE_SPEED * 0.7, Math.min(BASE_SPEED * 1.4, desired));
+
+        // 가속은 천천히, 감속은 빠르게
+        const diff = desired - m.velocity;
+        const accelFollow = 0.06;
+        const decelFollow = 0.22;
+        m.velocity += diff * (diff >= 0 ? accelFollow : decelFollow);
 
         const remaining = RACE_DURATION - elapsed;
         if (remaining < 6000 && remaining > 0) {
