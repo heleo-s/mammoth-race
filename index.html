@@ -293,10 +293,27 @@
     const DISPLAY_METERS = 300;
     const LANE_COUNT = 8;
     const BASE_SPEED = TRACK_LENGTH / (RACE_DURATION / 1000);
+    // 트랙 세로 폭(하단 기준으로 좁힘)
+    const TRACK_BOTTOM_N = 0.88; // 화면 높이 대비 하단 위치
+    const TRACK_HEIGHT_N = 0.23; // 기존(0.46) 대비 절반 수준
+    // 카메라 줌 (작을수록 더 멀리 봄 = 한 번에 더 넓게 보임)
+    const WORLD_SCALE = 0.78;
+    // 줌 아웃 보정용 매머드 크기 배율
+    const MAMMOTH_SCALE_MULT = 1.28;
 
     const canvas = document.getElementById('raceCanvas');
     const ctx = canvas.getContext('2d');
     let W = 0, H = 0;
+
+    function getTrackBounds() {
+      const tBot = H * TRACK_BOTTOM_N;
+      const tTop = tBot - H * TRACK_HEIGHT_N;
+      return { tTop, tBot };
+    }
+
+    function worldToScreenX(worldX) {
+      return (worldX - cameraX) * WORLD_SCALE + W * 0.35;
+    }
 
     function resizeCanvas() {
       const wrap = document.getElementById('canvasWrap');
@@ -318,6 +335,7 @@
     let pausedTotal = 0;
     let focusRank = 1;
     let cameraX = 0;
+    let cameraVel = 0;
     let lastFrameTime = 0;
     let cloudParticles = [];
     let dustParticles = [];
@@ -395,7 +413,7 @@
     }
     function drawDust() {
       for (const d of dustParticles) {
-        const sx = d.x - cameraX + W * 0.35;
+        const sx = worldToScreenX(d.x);
         if (sx < -15 || sx > W + 15) continue;
         ctx.globalAlpha = d.life * 0.4;
         ctx.fillStyle = d.color;
@@ -444,14 +462,15 @@
 
       // 잔디/녹지
       const grassY = riverY + riverH;
-      const grassGrad = ctx.createLinearGradient(0, grassY, 0, H * 0.42);
+      const { tTop } = getTrackBounds();
+      const grassGrad = ctx.createLinearGradient(0, grassY, 0, tTop);
       grassGrad.addColorStop(0, '#6aaa48');
       grassGrad.addColorStop(1, '#5a9a3a');
       ctx.fillStyle = grassGrad;
-      ctx.fillRect(0, grassY, W, H * 0.42 - grassY);
+      ctx.fillRect(0, grassY, W, tTop - grassY);
 
       // 트랙 이후 바닥
-      const trackBot = H * 0.88;
+      const { tBot: trackBot } = getTrackBounds();
       const botGrad = ctx.createLinearGradient(0, trackBot, 0, H);
       botGrad.addColorStop(0, '#5a9a3a');
       botGrad.addColorStop(1, '#4a8a30');
@@ -501,8 +520,7 @@
 
     // ===== 트랙 =====
     function drawTrack() {
-      const tTop = H * 0.42;
-      const tBot = H * 0.88;
+      const { tTop, tBot } = getTrackBounds();
 
       // 트랙 본체 (흙길 느낌)
       const tg = ctx.createLinearGradient(0, tTop, 0, tBot);
@@ -535,7 +553,7 @@
       ctx.textBaseline = 'top';
       for (let m = 50; m < DISPLAY_METERS; m += 50) {
         const worldX = (m / DISPLAY_METERS) * TRACK_LENGTH;
-        const sx = worldX - cameraX + W * 0.35;
+        const sx = worldToScreenX(worldX);
         if (sx < -10 || sx > W + 10) continue;
         ctx.fillStyle = 'rgba(120,90,50,0.25)';
         ctx.fillRect(sx - 0.5, tTop, 1, tBot - tTop);
@@ -544,7 +562,7 @@
       }
 
       // 결승선
-      const fsx = TRACK_LENGTH - cameraX + W * 0.35;
+      const fsx = worldToScreenX(TRACK_LENGTH);
       if (fsx > -50 && fsx < W + 50) {
         const ss = 7, fw = 14;
         for (let r = 0; r < Math.ceil((tBot - tTop) / ss); r++) {
@@ -561,7 +579,7 @@
       }
 
       // 스타트
-      const ssx = -cameraX + W * 0.35;
+      const ssx = worldToScreenX(0);
       if (ssx > -20 && ssx < W + 20) {
         ctx.strokeStyle = 'rgba(255,255,255,0.5)';
         ctx.lineWidth = 2;
@@ -580,7 +598,7 @@
       ctx.save();
       ctx.translate(sx, by);
       const bounce = Math.sin(phase * 8) * 2 * s;
-      const legSwing = Math.sin(phase * 8) * 12;
+      const legSwing = Math.sin(phase * 9) * 18;
 
       ctx.fillStyle = 'rgba(0,0,0,0.15)';
       ctx.beginPath();
@@ -594,8 +612,8 @@
 
       const blp1 = Math.sin(phase * 8) * legSwing;
       const blp2 = Math.sin(phase * 8 + Math.PI) * legSwing;
-      drawLeg(-13 * s, 5 * s, 7 * s, 20 * s, dc, blp1 * 0.3);
-      drawLeg(7 * s, 5 * s, 7 * s, 20 * s, dc, blp2 * 0.3);
+      drawLeg(-13 * s, 5 * s, 7 * s, 20 * s, dc, blp1 * 0.55);
+      drawLeg(7 * s, 5 * s, 7 * s, 20 * s, dc, blp2 * 0.55);
 
       ctx.strokeStyle = dc; ctx.lineWidth = 2.5 * s; ctx.lineCap = 'round';
       ctx.beginPath();
@@ -622,8 +640,8 @@
 
       const flp1 = Math.sin(phase * 8 + Math.PI * 0.5) * legSwing;
       const flp2 = Math.sin(phase * 8 + Math.PI * 1.5) * legSwing;
-      drawLeg(-9 * s, 7 * s, 8 * s, 20 * s, bc, flp1 * 0.3);
-      drawLeg(11 * s, 7 * s, 8 * s, 20 * s, bc, flp2 * 0.3);
+      drawLeg(-9 * s, 7 * s, 8 * s, 20 * s, bc, flp1 * 0.55);
+      drawLeg(11 * s, 7 * s, 8 * s, 20 * s, bc, flp2 * 0.55);
 
       const hg = ctx.createRadialGradient(15 * s, -5 * s, 1 * s, 15 * s, -5 * s, 12 * s);
       hg.addColorStop(0, lc); hg.addColorStop(1, bc);
@@ -686,7 +704,7 @@
     // ===== 매머드 + 인디케이터 =====
     function drawMammothsAndIndicators(now) {
       const offL = [], offR = [];
-      const tTop = H * 0.42, tBot = H * 0.88;
+      const { tTop, tBot } = getTrackBounds();
       const trackH = tBot - tTop;
       const pad = trackH * 0.08;
 
@@ -694,9 +712,10 @@
       const sorted = [...mammoths].sort((a, b) => a.z - b.z);
 
       for (const m of sorted) {
-        const sx = m.x - cameraX + W * 0.35;
+        const sx = worldToScreenX(m.x);
         const ly = tTop + pad + m.z * (trackH - pad * 2);
-        const scale = 0.45 + m.z * 0.4;
+        // z(깊이)에 따른 크기 편차는 작게: 너무 작아/커져 보이지 않게
+        const scale = (0.62 + m.z * 0.18) * MAMMOTH_SCALE_MULT;
 
         if (sx < -70 || sx > W + 70) {
           if (sx < 0) offL.push(m); else offR.push(m);
@@ -876,7 +895,7 @@
       raceStartTime = performance.now();
       raceRunning = true; raceFinished = false;
       racePaused = false; pausedAt = 0; pausedTotal = 0;
-      cameraX = 0; lastFrameTime = raceStartTime;
+      cameraX = 0; cameraVel = 0; lastFrameTime = raceStartTime;
       resizeCanvas();
       requestAnimationFrame(loop);
     }
@@ -986,8 +1005,32 @@
       const ranking = getCurrentRanking();
       const fe = ranking[focusRank - 1] || ranking[0];
       if (fe) {
-        const clamped = Math.max(-W * 0.1, Math.min(TRACK_LENGTH - W * 0.5, fe.m.x - W * 0.32));
-        cameraX += (clamped - cameraX) * 0.08;
+        // 카메라: 데드존 + 룩어헤드 + 스프링(부드럽고 덜 흔들림)
+        const focus = fe.m;
+        const lookAhead = Math.max(0, Math.min((W * 0.28) / WORLD_SCALE, focus.velocity * 0.22)); // 월드 단위 룩어헤드
+
+        const anchor = W * 0.58; // 화면에서 피사체가 위치할 지점(우측 약간)
+        // screenX = (focus.x - cameraX) * WORLD_SCALE + W*0.35 가 anchor가 되도록
+        const desiredCam = (focus.x + lookAhead) - (anchor - W * 0.35) / WORLD_SCALE;
+
+        // 데드존: 피사체가 이 범위 내면 카메라가 덜 움직임
+        const deadMin = W * 0.50;
+        const deadMax = W * 0.64;
+        const focusScreenX = (focus.x - cameraX) * WORLD_SCALE + W * 0.35;
+        let targetCam = desiredCam;
+        if (focusScreenX >= deadMin && focusScreenX <= deadMax) {
+          targetCam = cameraX; // 유지(잔떨림 감소)
+        }
+
+        const minCam = -W * 0.1 / WORLD_SCALE;
+        const maxCam = TRACK_LENGTH - (W * 0.5) / WORLD_SCALE;
+        const clamped = Math.max(minCam, Math.min(maxCam, targetCam));
+
+        // dt 기반 스프링(프레임레이트 독립)
+        const stiffness = 0.015;
+        const damping = 0.82;
+        cameraVel = (cameraVel + (clamped - cameraX) * stiffness * dt) * damping;
+        cameraX += cameraVel;
       }
 
       if (elapsed >= RACE_DURATION * 1.8 || allFinished) {
