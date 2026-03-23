@@ -300,7 +300,6 @@
     const WORLD_SCALE = 0.78;
     // 줌 아웃 보정용 매머드 크기 배율
     const MAMMOTH_SCALE_MULT = 1.28;
-
     const canvas = document.getElementById('raceCanvas');
     const ctx = canvas.getContext('2d');
     let W = 0, H = 0;
@@ -335,7 +334,6 @@
     let pausedTotal = 0;
     let focusRank = 1;
     let cameraX = 0;
-    let cameraVel = 0;
     let lastFrameTime = 0;
     let cloudParticles = [];
     let dustParticles = [];
@@ -895,7 +893,7 @@
       raceStartTime = performance.now();
       raceRunning = true; raceFinished = false;
       racePaused = false; pausedAt = 0; pausedTotal = 0;
-      cameraX = 0; cameraVel = 0; lastFrameTime = raceStartTime;
+      cameraX = 0; lastFrameTime = raceStartTime;
       resizeCanvas();
       requestAnimationFrame(loop);
     }
@@ -1002,35 +1000,15 @@
         else allFinished = false;
       }
 
-      const ranking = getCurrentRanking();
-      const fe = ranking[focusRank - 1] || ranking[0];
-      if (fe) {
-        // 카메라: 데드존 + 룩어헤드 + 스프링(부드럽고 덜 흔들림)
-        const focus = fe.m;
-        const lookAhead = Math.max(0, Math.min((W * 0.28) / WORLD_SCALE, focus.velocity * 0.22)); // 월드 단위 룩어헤드
+      const camTarget = getCameraTargetMammoth();
+      if (camTarget) {
+        // 룩어헤드 없음: 타겟 X에 즉시 맞춤 (늦게 따라가는 느낌 제거)
+        const anchor = W * 0.56;
+        let desiredCam = camTarget.x - (anchor - W * 0.35) / WORLD_SCALE;
 
-        const anchor = W * 0.58; // 화면에서 피사체가 위치할 지점(우측 약간)
-        // screenX = (focus.x - cameraX) * WORLD_SCALE + W*0.35 가 anchor가 되도록
-        const desiredCam = (focus.x + lookAhead) - (anchor - W * 0.35) / WORLD_SCALE;
-
-        // 데드존: 피사체가 이 범위 내면 카메라가 덜 움직임
-        const deadMin = W * 0.50;
-        const deadMax = W * 0.64;
-        const focusScreenX = (focus.x - cameraX) * WORLD_SCALE + W * 0.35;
-        let targetCam = desiredCam;
-        if (focusScreenX >= deadMin && focusScreenX <= deadMax) {
-          targetCam = cameraX; // 유지(잔떨림 감소)
-        }
-
-        const minCam = -W * 0.1 / WORLD_SCALE;
-        const maxCam = TRACK_LENGTH - (W * 0.5) / WORLD_SCALE;
-        const clamped = Math.max(minCam, Math.min(maxCam, targetCam));
-
-        // dt 기반 스프링(프레임레이트 독립)
-        const stiffness = 0.015;
-        const damping = 0.82;
-        cameraVel = (cameraVel + (clamped - cameraX) * stiffness * dt) * damping;
-        cameraX += cameraVel;
+        const minCam = -W * 0.08 / WORLD_SCALE;
+        const maxCam = TRACK_LENGTH - (W * 0.52) / WORLD_SCALE;
+        cameraX = Math.max(minCam, Math.min(maxCam, desiredCam));
       }
 
       if (elapsed >= RACE_DURATION * 1.8 || allFinished) {
@@ -1043,6 +1021,18 @@
         .map(m => ({ m, x: m.x }))
         .sort((a, b) => b.x - a.x)
         .map((e, i) => ({ rank: i + 1, m: e.m }));
+    }
+
+    /** 카메라 전용: 골인한 매머드는 제외하고, 남은 주자만으로 N등(포커스) 타겟 */
+    function getCameraTargetMammoth() {
+      const racing = mammoths.filter(m => !m.finished);
+      if (racing.length === 0) {
+        if (!mammoths.length) return null;
+        return [...mammoths].sort((a, b) => b.x - a.x)[0];
+      }
+      racing.sort((a, b) => b.x - a.x);
+      const idx = Math.min(Math.max(0, focusRank - 1), racing.length - 1);
+      return racing[idx];
     }
 
     function drawResultBanner() {
