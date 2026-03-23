@@ -300,6 +300,9 @@
     const WORLD_SCALE = 0.78;
     // 줌 아웃 보정용 매머드 크기 배율
     const MAMMOTH_SCALE_MULT = 1.28;
+    // 이전 타겟 골인 후 새 타겟으로 갈 때만: 카메라 일정 속도(월드/초)로 이동
+    const CAMERA_RETARGET_SPEED = 3400;
+
     const canvas = document.getElementById('raceCanvas');
     const ctx = canvas.getContext('2d');
     let W = 0, H = 0;
@@ -334,6 +337,8 @@
     let pausedTotal = 0;
     let focusRank = 1;
     let cameraX = 0;
+    let cameraPrevTargetIndex = -1;
+    let cameraSmoothRetarget = false;
     let lastFrameTime = 0;
     let cloudParticles = [];
     let dustParticles = [];
@@ -893,7 +898,10 @@
       raceStartTime = performance.now();
       raceRunning = true; raceFinished = false;
       racePaused = false; pausedAt = 0; pausedTotal = 0;
-      cameraX = 0; lastFrameTime = raceStartTime;
+      cameraX = 0;
+      cameraPrevTargetIndex = -1;
+      cameraSmoothRetarget = false;
+      lastFrameTime = raceStartTime;
       resizeCanvas();
       requestAnimationFrame(loop);
     }
@@ -1002,13 +1010,38 @@
 
       const camTarget = getCameraTargetMammoth();
       if (camTarget) {
-        // 룩어헤드 없음: 타겟 X에 즉시 맞춤 (늦게 따라가는 느낌 제거)
         const anchor = W * 0.56;
         let desiredCam = camTarget.x - (anchor - W * 0.35) / WORLD_SCALE;
 
         const minCam = -W * 0.08 / WORLD_SCALE;
         const maxCam = TRACK_LENGTH - (W * 0.52) / WORLD_SCALE;
-        cameraX = Math.max(minCam, Math.min(maxCam, desiredCam));
+        desiredCam = Math.max(minCam, Math.min(maxCam, desiredCam));
+
+        const dtSec = dt / 1000;
+
+        // 이전 프레임 타겟이 골인해서 타겟 매머드가 바뀐 경우만: 스냅 금지 → 리니어 이동
+        if (cameraPrevTargetIndex >= 0 && camTarget.index !== cameraPrevTargetIndex) {
+          const prevM = mammoths.find(m => m.index === cameraPrevTargetIndex);
+          if (prevM && prevM.finished) {
+            cameraSmoothRetarget = true;
+          }
+        }
+
+        if (cameraSmoothRetarget) {
+          const err = desiredCam - cameraX;
+          const step = CAMERA_RETARGET_SPEED * dtSec;
+          if (Math.abs(err) <= step) {
+            cameraX = desiredCam;
+            cameraSmoothRetarget = false;
+          } else {
+            cameraX += err > 0 ? step : -step;
+            cameraX = Math.max(minCam, Math.min(maxCam, cameraX));
+          }
+        } else {
+          cameraX = desiredCam;
+        }
+
+        cameraPrevTargetIndex = camTarget.index;
       }
 
       if (elapsed >= RACE_DURATION * 1.8 || allFinished) {
@@ -1263,3 +1296,4 @@
   </script>
 </body>
 </html>
+
