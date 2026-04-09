@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 80" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="dirt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b89050"/>
+      <stop offset="20%" stop-color="#c4a060"/>
+      <stop offset="40%" stop-color="#d0ad6a"/>
+      <stop offset="50%" stop-color="#d8b878"/>
+      <stop offset="60%" stop-color="#d0ad6a"/>
+      <stop offset="80%" stop-color="#c4a060"/>
+      <stop offset="100%" stop-color="#aa8548"/>
+    </linearGradient>
+    <!-- top edge grass-to-dirt -->
+    <linearGradient id="edge-top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#408628"/>
+      <stop offset="40%" stop-color="#5a9838"/>
+      <stop offset="60%" stop-color="#9a8858"/>
+      <stop offset="100%" stop-color="#b89050"/>
+    </linearGradient>
+    <!-- bottom edge dirt-to-grass -->
+    <linearGradient id="edge-bot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#aa8548"/>
+      <stop offset="40%" stop-color="#9a8858"/>
+      <stop offset="60%" stop-color="#5a9838"/>
+      <stop offset="100%" stop-color="#4d9630"/>
+    </linearGradient>
+    <!-- subtle noise texture -->
+    <pattern id="dirt-tex" x="0" y="0" width="6" height="80" patternUnits="userSpaceOnUse">
+      <rect width="3" height="80" fill="#8a7040" opacity="0.04"/>
+      <rect x="3" width="3" height="80" fill="#e0c888" opacity="0.03"/>
+    </pattern>
+  </defs>
+  <!-- top edge -->
+  <rect y="0" width="480" height="8" fill="url(#edge-top)"/>
+  <!-- dirt body -->
+  <rect y="4" width="480" height="72" fill="url(#dirt)"/>
+  <!-- texture overlay -->
+  <rect y="4" width="480" height="72" fill="url(#dirt-tex)"/>
+  <!-- lane lines -->
+  <g stroke="rgba(255,255,255,0.06)" stroke-width="0.8" stroke-dasharray="8 16">
+    <line x1="0" y1="17" x2="480" y2="17"/>
+    <line x1="0" y1="30" x2="480" y2="30"/>
+    <line x1="0" y1="43" x2="480" y2="43"/>
+    <line x1="0" y1="56" x2="480" y2="56"/>
+    <line x1="0" y1="69" x2="480" y2="69"/>
+  </g>
+  <!-- bottom edge -->
+  <rect y="72" width="480" height="8" fill="url(#edge-bot)"/>
+  <!-- track marks / footprints hint -->
+  <g stroke="#7a6030" stroke-width="0.5" opacity="0.04" fill="none">
+    <path d="M0,20 Q40,18 80,20 Q120,22 160,20 Q200,18 240,20 Q280,22 320,20 Q360,18 400,20 Q440,22 480,20"/>
+    <path d="M0,35 Q50,33 100,35 Q150,37 200,35 Q250,33 300,35 Q350,37 400,35 Q450,33 480,35"/>
+    <path d="M0,50 Q30,48 60,50 Q90,52 120,50 Q150,48 180,50 Q210,52 240,50 Q270,48 300,50 Q330,52 360,50 Q390,48 420,50 Q450,52 480,50"/>
+    <path d="M0,65 Q45,63 90,65 Q135,67 180,65 Q225,63 270,65 Q315,67 360,65 Q405,63 450,65 Q475,67 480,65"/>
+  </g>
+</svg>

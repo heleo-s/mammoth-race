@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 120" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="mtn-far" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a6e5c"/>
+      <stop offset="100%" stop-color="#5a8068"/>
+    </linearGradient>
+    <linearGradient id="snow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8f2f0" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#e8f2f0" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="mtn-fog" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c0d8e8" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#c0d8e8" stop-opacity="0.35"/>
+    </linearGradient>
+  </defs>
+  <!-- mountain body -->
+  <path d="M0,120 L0,80 Q30,55 60,68 Q90,40 130,30 Q160,18 190,35 Q220,22 260,15 Q300,8 340,25 Q370,12 410,20 Q440,8 480,18 Q520,30 550,22 Q580,38 620,28 Q660,15 700,32 Q740,20 780,35 Q810,18 850,28 Q890,40 920,30 Q950,50 960,45 L960,120Z" fill="url(#mtn-far)"/>
+  <!-- snow caps -->
+  <path d="M130,30 Q145,28 160,18 Q175,22 190,35 Z M260,15 Q280,10 300,8 Q320,12 340,25 Z M410,20 Q425,12 440,8 Q460,14 480,18 Z M620,28 Q640,18 660,15 Q680,20 700,32 Z M850,28 Q870,22 890,40 Q880,35 860,32 Z" fill="url(#snow)"/>
+  <!-- fog overlay -->
+  <rect y="60" width="960" height="60" fill="url(#mtn-fog)"/>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 80" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <radialGradient id="c1" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.9"/>
+      <stop offset="60%" stop-color="#f0f4ff" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#dce8f5" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="c2" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.8"/>
+      <stop offset="55%" stop-color="#eef2fa" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#d8e4f0" stop-opacity="0.05"/>
+    </radialGradient>
+    <filter id="cloud-shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#4a6a8a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+  <!-- cloud group 1 (big) -->
+  <g filter="url(#cloud-shadow)">
+    <ellipse cx="80" cy="30" rx="50" ry="18" fill="url(#c1)"/>
+    <ellipse cx="55" cy="35" rx="35" ry="14" fill="url(#c1)"/>
+    <ellipse cx="105" cy="33" rx="30" ry="12" fill="url(#c2)"/>
+    <ellipse cx="75" cy="24" rx="22" ry="10" fill="rgba(255,255,255,0.5)"/>
+  </g>
+  <!-- cloud group 2 (medium) -->
+  <g filter="url(#cloud-shadow)">
+    <ellipse cx="270" cy="22" rx="38" ry="14" fill="url(#c2)"/>
+    <ellipse cx="248" cy="26" rx="25" ry="10" fill="url(#c1)"/>
+    <ellipse cx="290" cy="24" rx="22" ry="9" fill="url(#c2)"/>
+    <ellipse cx="268" cy="18" rx="16" ry="7" fill="rgba(255,255,255,0.4)"/>
+  </g>
+  <!-- cloud group 3 (small) -->
+  <g filter="url(#cloud-shadow)">
+    <ellipse cx="430" cy="40" rx="30" ry="12" fill="url(#c1)"/>
+    <ellipse cx="415" cy="43" rx="20" ry="9" fill="url(#c2)"/>
+    <ellipse cx="448" cy="42" rx="18" ry="8" fill="url(#c1)"/>
+  </g>
+  <!-- cloud group 4 (big) -->
+  <g filter="url(#cloud-shadow)">
+    <ellipse cx="600" cy="28" rx="45" ry="16" fill="url(#c2)"/>
+    <ellipse cx="575" cy="32" rx="30" ry="12" fill="url(#c1)"/>
+    <ellipse cx="625" cy="30" rx="28" ry="11" fill="url(#c2)"/>
+    <ellipse cx="595" cy="22" rx="20" ry="8" fill="rgba(255,255,255,0.45)"/>
+  </g>
+  <!-- cloud group 5 (small wispy) -->
+  <g filter="url(#cloud-shadow)">
+    <ellipse cx="740" cy="18" rx="25" ry="8" fill="url(#c1)"/>
+    <ellipse cx="755" cy="20" rx="18" ry="6" fill="url(#c2)"/>
+  </g>
+</svg>
