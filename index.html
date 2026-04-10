@@ -936,8 +936,8 @@
       // 프레임 결정
       let frameIdx;
       if (phase <= 0) {
-        // 정지: frame 0 고정 (호흡 효과는 y-bob으로)
-        frameIdx = 0;
+        // 정지: 맨 오른쪽 아래 프레임(frame 7) 고정 (호흡 효과는 y-bob으로)
+        frameIdx = 7;
       } else {
         // 달리기: 8프레임 10fps 루프
         frameIdx = (SPRITE_FRAME_TOTAL - 1) - (Math.floor(phase * 10) % SPRITE_FRAME_TOTAL);
@@ -955,7 +955,7 @@
       ctx.save();
       ctx.fillStyle = 'rgba(0,0,0,0.14)';
       ctx.beginPath();
-      ctx.ellipse(sx, by + dispH * 0.34, dispW * 0.36, dispH * 0.055, 0, 0, Math.PI * 2);
+      ctx.ellipse(sx, by + dispH * 0.29, dispW * 0.36, dispH * 0.055, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
@@ -1326,13 +1326,21 @@
       lastNames = [...names];
       lastColors = colors ? [...colors] : null;
 
+      // 출발 순서 랜덤 셔플
+      const order = Array.from({length: n}, (_, i) => i);
+      for (let i = n - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+
       for (let i = 0; i < n; i++) {
+        const oi = order[i];
         mammoths.push({
-          name: names[i].trim() || `매머드 ${i + 1}`,
-          color: (colors && colors[i]) ? colors[i] : MAMMOTH_COLORS[i % MAMMOTH_COLORS.length],
+          name: names[oi].trim() || `매머드 ${oi + 1}`,
+          color: (colors && colors[oi]) ? colors[oi] : MAMMOTH_COLORS[oi % MAMMOTH_COLORS.length],
           laneIndex: i % lc, x: 0, velocity: BASE_SPEED,
-          z: (i / Math.max(1, n - 1)),
-          zTarget: (i / Math.max(1, n - 1)),
+          z: Math.max(0.04, Math.min(0.96, 0.5 + (i % 2 === 1 ? -1 : 1) * Math.ceil(i / 2) * Math.max(0.07, Math.min(0.15, 0.7 / n)))),
+          zTarget: Math.max(0.04, Math.min(0.96, 0.5 + (i % 2 === 1 ? -1 : 1) * Math.ceil(i / 2) * Math.max(0.07, Math.min(0.15, 0.7 / n)))),
           zVel: 0,
           colliding: false,
           collideTimer: 0,
@@ -1368,6 +1376,26 @@
       }
 
       if (!raceRunning) return;
+
+      // 동적 줌: 카운트다운 중에도 적용
+      {
+        const focusCam = getCameraTargetMammoth();
+        let targetScale;
+        if (focusCam) {
+          const others = mammoths.filter(m => m !== focusCam);
+          if (others.length > 0) {
+            const nearestDist = Math.min(...others.map(m => Math.abs(m.x - focusCam.x)));
+            const fitScale = (W * 0.40) / Math.max(nearestDist * BASE_WORLD_SCALE, 1);
+            targetScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, fitScale));
+          } else {
+            targetScale = ZOOM_MAX;
+          }
+        } else {
+          targetScale = ZOOM_DEFAULT;
+        }
+        worldScale += (targetScale - worldScale) * 0.04;
+      }
+
       // 카운트다운 중이면 매머드 이동 안함
       if (countdownActive) {
         lastFrameTime = now;
@@ -1384,7 +1412,7 @@
       const zAlpha = 1 - Math.exp(-dt / 260);
       for (const m of mammoths) {
         if (m.finished) continue;
-        m.zTarget += (Math.random() - 0.5) * 0.015;
+        m.zTarget += (Math.random() - 0.5) * 0.010;
         m.zTarget = Math.max(0.04, Math.min(0.96, m.zTarget));
         m.zVel *= 0.86;
         m.z += (m.zTarget - m.z) * zAlpha + m.zVel;
@@ -1392,7 +1420,7 @@
       }
 
       const COLLISION_X = 60;
-      const COLLISION_Z = 0.11;
+      const COLLISION_Z = 0.07;
       for (const m of mammoths) m.colliding = false;
 
       for (let i = 0; i < mammoths.length; i++) {
@@ -1418,6 +1446,10 @@
             const impulse = overlap * 0.03;
             a.zVel += dir * impulse;
             b.zVel -= dir * impulse;
+            // X축 튕김: 앞선 쪽은 앞으로, 뒤진 쪽은 뒤로
+            const xBounce = (overlap / COLLISION_Z) * BASE_SPEED * (0.15 + Math.random() * 0.15);
+            if (a.x >= b.x) { a.velocity += xBounce; b.velocity -= xBounce * 0.5; }
+            else             { b.velocity += xBounce; a.velocity -= xBounce * 0.5; }
           }
         }
       }
@@ -1436,8 +1468,8 @@
         else if (Math.random() < 0.002) { m.stumbleTimer = 500 + Math.random() * 800; }
 
         if (m.colliding) {
-          desired -= BASE_SPEED * 0.35;
-          m.collideTimer = 380;
+          desired -= BASE_SPEED * 0.25;
+          m.collideTimer = 200;
         } else if (m.collideTimer > 0) {
           m.collideTimer -= dt;
         }
@@ -1467,25 +1499,6 @@
         else allFinished = false;
       }
 
-      // 동적 줌: 카메라 따라가는 매머드와 가장 가까운 경쟁자 거리 기준
-      if (!countdownActive) {
-        const focusCam = getCameraTargetMammoth();
-        let targetScale;
-        if (focusCam) {
-          const others = mammoths.filter(m => m !== focusCam);
-          if (others.length > 0) {
-            const nearestDist = Math.min(...others.map(m => Math.abs(m.x - focusCam.x)));
-            // 화면 너비의 40%에 포커스+가장 가까운 경쟁자가 들어오는 줌 계산
-            const fitScale = (W * 0.40) / Math.max(nearestDist * BASE_WORLD_SCALE, 1);
-            targetScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, fitScale));
-          } else {
-            targetScale = ZOOM_MAX;
-          }
-        } else {
-          targetScale = ZOOM_DEFAULT;
-        }
-        worldScale += (targetScale - worldScale) * 0.04;
-      }
 
       const camTarget = getCameraTargetMammoth();
       if (camTarget) {
