@@ -458,7 +458,6 @@
       <button class="btn-pause" id="pauseBtn">일시정지</button>
       <button class="btn-reset" id="resetBtn">다시시작</button>
       <button class="btn-back" id="backBtn">설정</button>
-      <div class="race-timer" id="raceTimer">00:00.0</div>
     </div>
     <div class="race-canvas-wrap" id="canvasWrap">
       <canvas id="raceCanvas"></canvas>
@@ -1074,8 +1073,8 @@
         const dispW = dispH * 1.2;
 
         // 인디케이터: 화면 밖으로 나가는 순간부터
-        if (renderedSx < 0) offL.push(m);
-        else if (renderedSx > W) offR.push(m);
+        if (renderedSx < 0) offL.push({ m, ly });
+        else if (renderedSx > W) offR.push({ m, ly });
 
         // 완전히 벗어나면 드로우 스킵
         if (renderedSx < -dispW || renderedSx > W + dispW) continue;
@@ -1090,10 +1089,9 @@
     }
 
     function drawOffscreen(list, side) {
-      const startY = H * 0.44;
-      const gap = 22;
-      list.forEach((m, i) => {
-        const y = startY + i * gap;
+      const { tTop, tBot } = getTrackBounds();
+      list.forEach(({ m, ly }) => {
+        const y = Math.max(tTop + 10, Math.min(tBot - 10, ly));
         const x = side === 'left' ? 10 : W - 10;
         ctx.fillStyle = m.color;
         ctx.beginPath();
@@ -1378,6 +1376,19 @@
           targetScale = ZOOM_DEFAULT;
         }
         worldScale += (targetScale - worldScale) * 0.04;
+      }
+
+      // 카운트다운 중에도 카메라 추적 (끝날 때 튀지 않도록)
+      {
+        const camTarget = getCameraTargetMammoth();
+        if (camTarget) {
+          const anchor = W * 0.56;
+          let desiredCam = camTarget.x - (anchor - W * 0.35) / BASE_WORLD_SCALE;
+          const minCam = -W * 0.08 / BASE_WORLD_SCALE;
+          const maxCam = TRACK_LENGTH - (W * 0.52) / BASE_WORLD_SCALE;
+          desiredCam = Math.max(minCam, Math.min(maxCam, desiredCam));
+          cameraX += (desiredCam - cameraX) * 0.12;
+        }
       }
 
       // 카운트다운 중이면 매머드 이동 안함
@@ -1717,7 +1728,6 @@
       drawPausedOverlay();
       drawCountdown(now);
       drawGoFlash(now);
-      updateTimerDisplay(now);
     }
 
     function loop(now) {
