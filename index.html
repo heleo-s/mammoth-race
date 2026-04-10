@@ -940,7 +940,7 @@
         frameIdx = 0;
       } else {
         // 달리기: 8프레임 10fps 루프
-        frameIdx = Math.floor(phase * 10) % SPRITE_FRAME_TOTAL;
+        frameIdx = (SPRITE_FRAME_TOTAL - 1) - (Math.floor(phase * 10) % SPRITE_FRAME_TOTAL);
       }
       const col = frameIdx % SPRITE_COLS;
       const row = Math.floor(frameIdx / SPRITE_COLS);
