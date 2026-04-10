@@ -1057,6 +1057,10 @@
       const trackH = tBot - tTop;
       const pad = trackH * 0.08;
 
+      // 줌 적용 후 실제 화면 좌표 계산용
+      const focusCam = getCameraTargetMammoth();
+      const zoomCx = focusCam ? worldToScreenX(focusCam.x) : W * 0.5;
+
       const sorted = [...mammoths].sort((a, b) => a.z - b.z);
 
       for (const m of sorted) {
@@ -1064,61 +1068,41 @@
         const ly = tTop + pad + m.z * (trackH - pad * 2);
         const scale = (0.62 + m.z * 0.18) * MAMMOTH_SCALE_MULT;
 
-        if (sx < -70 || sx > W + 70) {
-          if (sx < 0) offL.push(m); else offR.push(m);
-          continue;
-        }
+        // 줌 transform 적용 후 실제 렌더 위치
+        const renderedSx = zoomCx + (sx - zoomCx) * worldScale;
+        const dispH = SPRITE_BASE_H * scale;
+        const dispW = dispH * 1.2;
+
+        // 인디케이터: 화면 밖으로 나가는 순간부터
+        if (renderedSx < 0) offL.push(m);
+        else if (renderedSx > W) offR.push(m);
+
+        // 완전히 벗어나면 드로우 스킵
+        if (renderedSx < -dispW || renderedSx > W + dispW) continue;
 
         const phase = raceRunning && !racePaused && !countdownActive ? (now - raceStartTime - pausedTotal - COUNTDOWN_DURATION) / 1000 + m.index * 0.5 : 0;
         drawMammoth(sx, ly, m, scale, m.finished ? 0 : phase);
 
         if (raceRunning && !m.finished && !racePaused && !countdownActive) spawnDust(m.x, ly, 'rgba(180,160,120,0.3)');
-
-        ctx.font = `900 ${10 * scale}px ${UI_FONT}`;
-        const txtW = ctx.measureText(m.name).width;
-        const labX = sx - (txtW + 10) / 2;
-        const labY = ly - 28 * scale;
-        const labH = 14 * scale;
-
-        ctx.fillStyle = 'rgba(255,255,255,0.92)';
-        ctx.beginPath();
-        ctx.roundRect(labX, labY - labH / 2, txtW + 10, labH, 999);
-        ctx.fill();
-        ctx.strokeStyle = '#1f1f1f'; ctx.lineWidth = 1.6; ctx.stroke();
-        ctx.fillStyle = '#1c2b3d';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(m.name, sx, labY);
       }
 
-      drawOffscreen(offL, 'left');
-      drawOffscreen(offR, 'right');
+      return { offL, offR };
     }
 
     function drawOffscreen(list, side) {
       const startY = H * 0.44;
-      const gap = 18;
-      ctx.font = `900 9px ${UI_FONT}`;
+      const gap = 22;
       list.forEach((m, i) => {
         const y = startY + i * gap;
-        const x = side === 'left' ? 6 : W - 6;
-        const px = side === 'left' ? x + 9 : x - 82;
-        ctx.fillStyle = 'rgba(255,255,255,0.92)';
-        ctx.beginPath(); ctx.roundRect(px, y - 8, 73, 16, 999); ctx.fill();
-        ctx.strokeStyle = '#1f1f1f'; ctx.lineWidth = 1.3; ctx.stroke();
-
+        const x = side === 'left' ? 10 : W - 10;
         ctx.fillStyle = m.color;
         ctx.beginPath();
         if (side === 'left') {
-          ctx.moveTo(x, y); ctx.lineTo(x + 7, y - 5); ctx.lineTo(x + 7, y + 5);
+          ctx.moveTo(x, y); ctx.lineTo(x + 10, y - 7); ctx.lineTo(x + 10, y + 7);
         } else {
-          ctx.moveTo(x, y); ctx.lineTo(x - 7, y - 5); ctx.lineTo(x - 7, y + 5);
+          ctx.moveTo(x, y); ctx.lineTo(x - 10, y - 7); ctx.lineTo(x - 10, y + 7);
         }
         ctx.closePath(); ctx.fill();
-
-        ctx.fillStyle = '#1c2b3d';
-        ctx.textAlign = side === 'left' ? 'left' : 'right';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(m.name, side === 'left' ? x + 13 : x - 13, y);
       });
     }
 
@@ -1720,10 +1704,12 @@
       drawClouds();
       drawTrack();
       drawDust();
-      drawMammothsAndIndicators(now);
+      const { offL, offR } = drawMammothsAndIndicators(now);
 
       ctx.restore(); // UI는 줌 없이
 
+      drawOffscreen(offL, 'left');
+      drawOffscreen(offR, 'right');
       drawOverlayPanel();
       drawFlash();
       drawConfetti();
