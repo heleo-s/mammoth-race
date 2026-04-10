@@ -474,7 +474,10 @@
     const BASE_SPEED = TRACK_LENGTH / (RACE_DURATION / 1000);
     const TRACK_BOTTOM_N = 0.88;
     const TRACK_HEIGHT_N = 0.23;
-    const WORLD_SCALE = 0.78;
+    const BASE_WORLD_SCALE = 0.78; // worldToScreenX 고정 스케일
+    const ZOOM_DEFAULT = 1.0;      // 줌 팩터 기본값
+    const ZOOM_MIN = 0.72;         // 최대 줌아웃
+    const ZOOM_MAX = 1.80;         // 최대 줌인
     const MAMMOTH_SCALE_MULT = 1.28;
     const CAMERA_RETARGET_SPEED = 3400;
     const COUNTDOWN_DURATION = 3000;
@@ -494,7 +497,7 @@
     }
 
     function worldToScreenX(worldX) {
-      return (worldX - cameraX) * WORLD_SCALE + W * 0.35;
+      return (worldX - cameraX) * BASE_WORLD_SCALE + W * 0.35;
     }
 
     function resizeCanvas() {
@@ -517,6 +520,7 @@
     let pausedTotal = 0;
     let focusRank = 1;
     let cameraX = 0;
+    let worldScale = ZOOM_DEFAULT;
     let cameraPrevTargetIndex = -1;
     let cameraSmoothRetarget = false;
     let lastFrameTime = 0;
@@ -1026,14 +1030,18 @@
       const imgData = octx.getImageData(0, 0, oc.width, oc.height);
       const d = imgData.data;
       const [tr, tg, tb] = hexToRgb(color);
-      const [th, ts] = rgbToHsl(tr, tg, tb);
+      const [th, ts, tl] = rgbToHsl(tr, tg, tb);
 
+      const BASE_L = 0.45;
       for (let i = 0; i < d.length; i += 4) {
         if (d[i + 3] < 20) continue;
         const [h, s, l] = rgbToHsl(d[i], d[i + 1], d[i + 2]);
-        // 파란 옷 픽셀 감지: 청색 계열 hue, 채도 충분, 극단적 명도 제외
         if (h >= 195 && h <= 265 && s > 0.28 && l > 0.14 && l < 0.82) {
-          const [nr, ng, nb] = hslToRgb(th, ts, l); // 명도(l) 유지 → 음영 보존
+          // 무채색(흰·검): 타겟 명도 기준으로 음영 유지, 유채색: 원본 명도 유지
+          const newL = ts < 0.08
+            ? Math.max(0, Math.min(1, tl + (l - BASE_L) * 0.4))
+            : l;
+          const [nr, ng, nb] = hslToRgb(th, ts, newL);
           d[i] = nr; d[i + 1] = ng; d[i + 2] = nb;
         }
       }
@@ -1338,6 +1346,7 @@
       raceRunning = true; raceFinished = false;
       racePaused = false; pausedAt = 0; pausedTotal = 0;
       cameraX = 0;
+      worldScale = ZOOM_DEFAULT;
       cameraPrevTargetIndex = -1;
       cameraSmoothRetarget = false;
       lastFrameTime = raceStartTime;
@@ -1458,13 +1467,33 @@
         else allFinished = false;
       }
 
+      // 동적 줌: 카메라 따라가는 매머드와 가장 가까운 경쟁자 거리 기준
+      if (!countdownActive) {
+        const focusCam = getCameraTargetMammoth();
+        let targetScale;
+        if (focusCam) {
+          const others = mammoths.filter(m => m !== focusCam);
+          if (others.length > 0) {
+            const nearestDist = Math.min(...others.map(m => Math.abs(m.x - focusCam.x)));
+            // 화면 너비의 40%에 포커스+가장 가까운 경쟁자가 들어오는 줌 계산
+            const fitScale = (W * 0.40) / Math.max(nearestDist * BASE_WORLD_SCALE, 1);
+            targetScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, fitScale));
+          } else {
+            targetScale = ZOOM_MAX;
+          }
+        } else {
+          targetScale = ZOOM_DEFAULT;
+        }
+        worldScale += (targetScale - worldScale) * 0.04;
+      }
+
       const camTarget = getCameraTargetMammoth();
       if (camTarget) {
         const anchor = W * 0.56;
-        let desiredCam = camTarget.x - (anchor - W * 0.35) / WORLD_SCALE;
+        let desiredCam = camTarget.x - (anchor - W * 0.35) / BASE_WORLD_SCALE;
 
-        const minCam = -W * 0.08 / WORLD_SCALE;
-        const maxCam = TRACK_LENGTH - (W * 0.52) / WORLD_SCALE;
+        const minCam = -W * 0.08 / BASE_WORLD_SCALE;
+        const maxCam = TRACK_LENGTH - (W * 0.52) / BASE_WORLD_SCALE;
         desiredCam = Math.max(minCam, Math.min(maxCam, desiredCam));
 
         const dtSec = dt / 1000;
@@ -1664,11 +1693,24 @@
 
     function render(now) {
       ctx.clearRect(0, 0, W, H);
+
+      // 줌 transform — 포커스 매머드 기준으로 world 전체 확대/축소
+      const focusMammoth = getCameraTargetMammoth();
+      const zoomCx = focusMammoth ? worldToScreenX(focusMammoth.x) : W * 0.5;
+      ctx.save();
+      const zoomCy = H * (TRACK_BOTTOM_N - TRACK_HEIGHT_N * 0.5); // 트랙 세로 중심
+      ctx.translate(zoomCx, zoomCy);
+      ctx.scale(worldScale, worldScale);
+      ctx.translate(-zoomCx, -zoomCy);
+
       drawBackground();
       drawClouds();
       drawTrack();
       drawDust();
       drawMammothsAndIndicators(now);
+
+      ctx.restore(); // UI는 줌 없이
+
       drawOverlayPanel();
       drawFlash();
       drawConfetti();
