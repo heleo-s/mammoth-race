@@ -343,58 +343,27 @@
       display: flex;
       animation: screenFade 0.3s ease-out;
     }
-    .race-topbar {
-      width: 100%;
-      max-width: 480px;
+    .btn-back-float {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--btn-red);
+      border: var(--btn-border);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 20;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 10px 12px 8px;
-      flex-wrap: wrap;
-      background: var(--card);
-      border: var(--btn-border);
-      border-radius: 18px;
-      box-shadow: 0 6px 0 var(--outline);
-      margin-top: 8px;
+      box-shadow: 0 4px 0 var(--btn-red-shadow);
+      transition: transform 0.1s, box-shadow 0.1s;
     }
-    /* 레이스 버튼 공통 */
-    .race-topbar button {
-      border-radius: 12px;
-      border: var(--btn-border);
-      font-weight: 900;
-      font-size: 0.75rem;
-      font-family: 'Jua', 'Noto Sans KR', sans-serif;
-      padding: 8px 16px;
-      cursor: pointer;
-      color: var(--btn-text);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.22);
-      transition: transform 0.1s, box-shadow 0.1s, filter 0.15s;
-      white-space: nowrap;
-      position: relative;
-    }
-    .race-topbar button:active { transform: translateY(4px); }
-    .race-topbar button:hover { filter: brightness(1.07); }
-
-    .btn-pause {
-      background: var(--btn-yellow);
-      color: var(--outline);
-      text-shadow: none;
-      box-shadow: 0 5px 0 var(--btn-yellow-shadow);
-    }
-    .btn-pause:active { box-shadow: 0 1px 0 var(--btn-yellow-shadow); }
-
-    .btn-reset {
-      background: var(--btn-blue);
-      box-shadow: 0 5px 0 var(--btn-blue-shadow);
-    }
-    .btn-reset:active { box-shadow: 0 1px 0 var(--btn-blue-shadow); }
-
-    .btn-back {
-      background: var(--btn-red);
-      box-shadow: 0 5px 0 var(--btn-red-shadow);
-    }
-    .btn-back:active { box-shadow: 0 1px 0 var(--btn-red-shadow); }
+    .btn-back-float:hover { filter: brightness(1.07); }
+    .btn-back-float:active { transform: translateY(4px); box-shadow: 0 0px 0 var(--btn-red-shadow); }
 
     .race-timer {
       background: var(--card);
@@ -454,13 +423,9 @@
 
   <!-- ===== 레이스 화면 ===== -->
   <div class="race-screen" id="raceScreen">
-    <div class="race-topbar">
-      <button class="btn-pause" id="pauseBtn">일시정지</button>
-      <button class="btn-reset" id="resetBtn">다시시작</button>
-      <button class="btn-back" id="backBtn">설정</button>
-    </div>
     <div class="race-canvas-wrap" id="canvasWrap">
       <canvas id="raceCanvas"></canvas>
+      <button class="btn-back-float" id="backBtn">&#8592;</button>
     </div>
   </div>
 
@@ -475,7 +440,7 @@
     const TRACK_HEIGHT_N = 0.23;
     const BASE_WORLD_SCALE = 0.78; // worldToScreenX 고정 스케일
     const ZOOM_DEFAULT = 1.0;      // 줌 팩터 기본값
-    const ZOOM_MIN = 0.72;         // 최대 줌아웃
+    const ZOOM_MIN = 0.85;         // 최대 줌아웃
     const ZOOM_MAX = 1.80;         // 최대 줌인
     const MAMMOTH_SCALE_MULT = 1.28;
     const CAMERA_RETARGET_SPEED = 3400;
@@ -538,6 +503,8 @@
 
     let resultBannerAlpha = 0;
     let resultBannerTarget = 0;
+    let resultTriggered = false;
+    let resultMammoth = null;
 
     let flashAlpha = 0;
 
@@ -867,11 +834,6 @@
       if (fsx > -60 && fsx < W + 60) {
         const ss = 6, fw = 16;
 
-        ctx.fillStyle = 'rgba(180,30,20,0.8)';
-        ctx.fillRect(fsx - fw / 2 - 3, tTop - 18, 4, trackH + 18);
-        ctx.fillRect(fsx + fw / 2 - 1, tTop - 18, 4, trackH + 18);
-        ctx.fillRect(fsx - fw / 2 - 3, tTop - 18, fw + 6, 5);
-
         for (let r = 0; r < Math.ceil(trackH / ss); r++) {
           for (let c = 0; c < Math.ceil(fw / ss); c++) {
             ctx.fillStyle = (r + c) % 2 === 0 ? 'rgba(255,255,255,0.92)' : 'rgba(20,20,30,0.88)';
@@ -1106,93 +1068,94 @@
 
     // ===== 미니맵 + 순위 오버레이 =====
     function drawOverlayPanel() {
-      const pad = 6;
-      const panelW = Math.min(W * 0.42, 180);
-      const miniH = 28;
+      const pad = 8;
+      const panelW = Math.min(W * 0.52, 210);
+      const miniH = 38;
       const x = pad, y = pad;
+      const r = 10;
+      const CARD = '#f0f8ff';
+      const OUTLINE = '#1f3650';
 
-      ctx.fillStyle = 'rgba(42,61,88,0.92)';
-      ctx.beginPath(); ctx.roundRect(x, y, panelW, miniH, 8); ctx.fill();
-      ctx.strokeStyle = '#111827'; ctx.lineWidth = 2; ctx.stroke();
+      // 미니맵 카드 (그림자 먼저, 카드 위에 덮기)
+      ctx.fillStyle = OUTLINE;
+      ctx.beginPath(); ctx.roundRect(x, y + 4, panelW, miniH, r); ctx.fill();
+      ctx.fillStyle = CARD;
+      ctx.beginPath(); ctx.roundRect(x, y, panelW, miniH, r); ctx.fill();
+      ctx.strokeStyle = OUTLINE; ctx.lineWidth = 2.5; ctx.stroke();
 
-      const ip = 8;
+      const ip = 10;
       const tx = x + ip, ty = y + miniH / 2, tiw = panelW - ip * 2;
 
-      ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 2;
+      // 트랙 라인
+      ctx.strokeStyle = 'rgba(31,54,80,0.2)'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + tiw, ty); ctx.stroke();
 
-      ctx.fillStyle = TITLE_GOLD;
-      ctx.fillRect(tx + tiw - 1, ty - 4, 2, 8);
+      // 결승선
+      ctx.fillStyle = '#f06060';
+      ctx.fillRect(tx + tiw - 2, ty - 7, 3, 14);
 
-      for (const m of mammoths) {
-        const p = Math.min(m.x / TRACK_LENGTH, 1);
-        ctx.fillStyle = m.color;
-        ctx.beginPath(); ctx.arc(tx + tiw * p, ty, 2.5, 0, Math.PI * 2); ctx.fill();
-      }
-
+      // 카메라 뷰 범위
       const cs = Math.max(0, cameraX / TRACK_LENGTH);
       const ce = Math.min(1, (cameraX + W * 0.6) / TRACK_LENGTH);
       const cx1 = tx + tiw * cs, cx2 = tx + tiw * ce;
-      ctx.fillStyle = 'rgba(255,206,71,0.2)';
-      ctx.fillRect(cx1, ty - 5, cx2 - cx1, 10);
-      ctx.strokeStyle = 'rgba(255,206,71,0.55)'; ctx.lineWidth = 1;
-      ctx.strokeRect(cx1, ty - 5, cx2 - cx1, 10);
+      ctx.fillStyle = 'rgba(90,181,240,0.18)';
+      ctx.fillRect(cx1, ty - 7, cx2 - cx1, 14);
+      ctx.strokeStyle = '#5ab5f0'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(cx1, ty - 7, cx2 - cx1, 14);
 
-      ctx.font = `900 8px ${UI_FONT}`;
-      ctx.fillStyle = '#d5e6ff';
-      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      ctx.fillText('MAP', x + 5, y + 3);
+      // 매머드 점
+      for (const m of mammoths) {
+        const p = Math.min(m.x / TRACK_LENGTH, 1);
+        ctx.fillStyle = m.color;
+        ctx.beginPath(); ctx.arc(tx + tiw * p, ty, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = OUTLINE; ctx.lineWidth = 1; ctx.stroke();
+      }
 
-      // 순위
+      // 순위표
       if (!mammoths.length) return;
       const ranking = getCurrentRanking();
-      const rankY = y + miniH + 4;
-      const rowH = 16;
-      const rankH = ranking.length * rowH + 8;
+      const rankY = y + miniH + 8;
+      const rowH = 19;
+      const rankH = ranking.length * rowH + 10;
 
-      ctx.fillStyle = 'rgba(42,61,88,0.92)';
-      ctx.beginPath(); ctx.roundRect(x, rankY, panelW, rankH, 8); ctx.fill();
-      ctx.strokeStyle = '#111827'; ctx.lineWidth = 2; ctx.stroke();
-
-      ctx.font = `900 8px ${UI_FONT}`;
-      ctx.fillStyle = '#d5e6ff';
-      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      ctx.fillText(raceFinished ? 'RESULT' : 'RANK', x + 5, rankY + 2);
+      ctx.fillStyle = OUTLINE;
+      ctx.beginPath(); ctx.roundRect(x, rankY + 4, panelW, rankH, r); ctx.fill();
+      ctx.fillStyle = CARD;
+      ctx.beginPath(); ctx.roundRect(x, rankY, panelW, rankH, r); ctx.fill();
+      ctx.strokeStyle = OUTLINE; ctx.lineWidth = 2.5; ctx.stroke();
 
       ranking.forEach(({ rank, m }, i) => {
-        const ry = rankY + 4 + i * rowH;
+        const ry = rankY + 5 + i * rowH;
         const isFocus = rank === focusRank;
-        const isWinner = raceFinished && rank === 1;
+        const isFinished = finishOrder.includes(m);
 
-        if (isWinner) {
-          ctx.fillStyle = 'rgba(255,216,77,0.3)';
-          ctx.beginPath(); ctx.roundRect(x + 3, ry + 1, panelW - 6, rowH - 2, 4); ctx.fill();
-        } else if (isFocus) {
-          ctx.fillStyle = 'rgba(109,173,255,0.24)';
-          ctx.beginPath(); ctx.roundRect(x + 3, ry + 1, panelW - 6, rowH - 2, 4); ctx.fill();
+        if (isFocus) {
+          ctx.fillStyle = 'rgba(90,181,240,0.22)';
+          ctx.beginPath(); ctx.roundRect(x + 3, ry, panelW - 6, rowH, 5); ctx.fill();
         }
 
-        ctx.font = `900 10px ${UI_FONT}`;
-        ctx.fillStyle = rank <= 3 ? TITLE_GOLD : '#d5e6ff';
+        ctx.font = `900 11px ${UI_FONT}`;
+        ctx.fillStyle = rank <= 3 ? '#c8920a' : OUTLINE;
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(`${rank}`, x + 8, ry + rowH / 2 + 1);
+        ctx.fillText(`${rank}`, x + 8, ry + rowH / 2);
 
         ctx.fillStyle = m.color;
-        ctx.beginPath(); ctx.arc(x + 22, ry + rowH / 2 + 1, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + 24, ry + rowH / 2, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = OUTLINE; ctx.lineWidth = 1; ctx.stroke();
 
-        ctx.font = `900 10px ${UI_FONT}`;
-        ctx.fillStyle = '#ffffff';
+        ctx.font = `900 11px ${UI_FONT}`;
+        ctx.fillStyle = OUTLINE;
         ctx.textAlign = 'left';
-        const maxNW = panelW - 75;
+        const maxNW = panelW - 72;
         let dn = m.name;
         while (ctx.measureText(dn).width > maxNW && dn.length > 2) dn = dn.slice(0, -1);
         if (dn !== m.name) dn += '…';
-        ctx.fillText(dn, x + 31, ry + rowH / 2 + 1);
+        ctx.fillText(dn, x + 34, ry + rowH / 2);
 
-        ctx.font = `900 9px ${UI_FONT}`;
-        ctx.fillStyle = '#b8d3f5';
+        ctx.font = `900 10px ${UI_FONT}`;
+        ctx.fillStyle = isFinished ? '#c8920a' : 'rgba(31,54,80,0.5)';
         ctx.textAlign = 'right';
-        ctx.fillText(m.finished ? `${DISPLAY_METERS}m` : `${toMeters(m.x)}m`, x + panelW - 6, ry + rowH / 2 + 1);
+        ctx.fillText(isFinished ? 'FINISH' : `${toMeters(m.x)}m`, x + panelW - 6, ry + rowH / 2);
       });
     }
 
@@ -1223,10 +1186,6 @@
       // 숫자 scale 애니메이션: 시작 크게 → 끝 작게
       const scale = 0.6 + frac * 0.8;
       const alpha = Math.min(1, frac * 2.5);
-
-      // 반투명 배경
-      ctx.fillStyle = `rgba(0,0,0,${0.25 * alpha})`;
-      ctx.fillRect(0, 0, W, H);
 
       ctx.save();
       ctx.translate(W / 2, H * 0.42);
@@ -1303,6 +1262,7 @@
       mammoths = []; finishOrder = []; dustParticles = [];
       confettiParticles = []; confettiActive = false;
       resultBannerAlpha = 0; resultBannerTarget = 0;
+      resultTriggered = false; resultMammoth = null;
       flashAlpha = 0;
       const lc = Math.min(LANE_COUNT, n);
       lastNames = [...names];
@@ -1334,6 +1294,7 @@
       initClouds();
       raceStartTime = performance.now();
       raceRunning = true; raceFinished = false;
+      resultTriggered = false; resultMammoth = null;
       racePaused = false; pausedAt = 0; pausedTotal = 0;
       cameraX = 0;
       worldScale = ZOOM_DEFAULT;
@@ -1379,7 +1340,7 @@
       }
 
       // 카운트다운 중에도 카메라 추적 (끝날 때 튀지 않도록)
-      {
+      if (!resultTriggered) {
         const camTarget = getCameraTargetMammoth();
         if (camTarget) {
           const anchor = W * 0.56;
@@ -1450,7 +1411,15 @@
       }
 
       for (const m of mammoths) {
-        if (m.finished) continue;
+        if (m.finished) {
+          // 결승 통과 후 서서히 감속하며 화면 밖으로
+          m.velocity *= 0.992;
+          m.smoothVel += (m.velocity - m.smoothVel) * 0.05;
+          const fps = Math.max(6, Math.min(10, 8 + (m.smoothVel / BASE_SPEED - 1) * 4));
+          m.animFrame += fps * (dt / 1000);
+          m.x += (m.velocity * dt) / 1000;
+          continue;
+        }
         let desired = m.velocity;
 
         desired += (Math.random() - 0.5) * (BASE_SPEED * 0.18);
@@ -1486,21 +1455,24 @@
         const fps = Math.max(6, Math.min(10, 8 + (m.smoothVel / BASE_SPEED - 1) * 4));
         m.animFrame += fps * (dt / 1000);
         m.x += (m.velocity * dt) / 1000;
-        if (m.x >= TRACK_LENGTH) {
-          m.x = TRACK_LENGTH; m.finished = true; finishOrder.push(m);
-          // 1등 결승 시 플래시 + 컨페티
+        if (m.x >= TRACK_LENGTH && !m.finished) {
+          m.finished = true; finishOrder.push(m);
           if (finishOrder.length === 1) {
             flashAlpha = 0.6;
             spawnConfetti();
+          }
+          // focusRank 등수 통과 시 결과 트리거
+          if (!resultTriggered && finishOrder.length >= focusRank) {
+            resultTriggered = true;
+            resultMammoth = finishOrder[focusRank - 1];
             resultBannerTarget = 1;
           }
         }
         else allFinished = false;
       }
 
-
       const camTarget = getCameraTargetMammoth();
-      if (camTarget) {
+      if (camTarget && !resultTriggered) {
         const anchor = W * 0.56;
         let desiredCam = camTarget.x - (anchor - W * 0.35) / BASE_WORLD_SCALE;
 
@@ -1540,10 +1512,13 @@
     }
 
     function getCurrentRanking() {
-      return mammoths
-        .map(m => ({ m, x: m.x }))
+      const finishedSet = new Set(finishOrder);
+      const finished = finishOrder.map((m, i) => ({ rank: i + 1, m }));
+      const racing = mammoths
+        .filter(m => !finishedSet.has(m))
         .sort((a, b) => b.x - a.x)
-        .map((e, i) => ({ rank: i + 1, m: e.m }));
+        .map((m, i) => ({ rank: finishOrder.length + i + 1, m }));
+      return [...finished, ...racing];
     }
 
     function getCameraTargetMammoth() {
@@ -1557,105 +1532,71 @@
       return racing[idx];
     }
 
-    // ===== 결과 배너 (포디움) — HUD·상단바 팔레트에 맞춤 =====
+    // ===== 결과 배너 — 오늘의 매머드 =====
     function drawResultBanner() {
-      if (resultBannerAlpha <= 0 || !finishOrder.length) return;
+      if (resultBannerAlpha <= 0 || !resultMammoth) return;
 
       ctx.globalAlpha = resultBannerAlpha;
 
-      ctx.fillStyle = 'rgba(31, 54, 80, 0.45)';
+      // 배경 딤
+      ctx.fillStyle = 'rgba(15,30,55,0.45)';
       ctx.fillRect(0, 0, W, H);
 
-      const bw = Math.min(W * 0.88, 360);
-      const bh = Math.min(H * 0.35, 200);
+      const bw = Math.min(W * 0.82, 300);
+      const bh = Math.min(H * 0.38, 200);
       const bx = (W - bw) / 2;
-      const by = H * 0.08;
-      const rCard = 16;
+      const by = (H - bh) / 2;
+      const br = 20;
 
-      const cardGrad = ctx.createLinearGradient(bx, by, bx, by + bh);
-      cardGrad.addColorStop(0, 'rgba(52, 74, 108, 0.97)');
-      cardGrad.addColorStop(1, 'rgba(38, 56, 84, 0.98)');
-      ctx.fillStyle = cardGrad;
-      ctx.beginPath();
-      ctx.roundRect(bx, by, bw, bh, rCard);
-      ctx.fill();
-      ctx.strokeStyle = '#2c4c70';
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      // 카드 (그림자 먼저)
+      ctx.fillStyle = '#1f3650';
+      ctx.beginPath(); ctx.roundRect(bx, by + 6, bw, bh, br); ctx.fill();
+      ctx.fillStyle = '#f0f8ff';
+      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, br); ctx.fill();
+      ctx.strokeStyle = '#1f3650'; ctx.lineWidth = 3; ctx.stroke();
 
-      const badgeW = Math.min(150, bw * 0.45);
-      const badgeH = 26;
-      const badgeX = bx + (bw - badgeW) / 2;
-      const badgeY = by + 12;
-      const badgeGrad = ctx.createLinearGradient(badgeX, badgeY, badgeX, badgeY + badgeH);
-      badgeGrad.addColorStop(0, '#ffe77a');
-      badgeGrad.addColorStop(0.55, '#ffce47');
-      badgeGrad.addColorStop(1, '#f3a900');
-      ctx.fillStyle = badgeGrad;
-      ctx.beginPath();
-      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 8);
-      ctx.fill();
-      ctx.strokeStyle = '#1f3650';
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-      ctx.font = `900 14px ${UI_FONT}`;
-      ctx.fillStyle = '#2b1a0d';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('WINNER', bx + bw / 2, badgeY + badgeH / 2 + 1);
+      const cx = bx + bw / 2;
 
-      // 1등
-      if (finishOrder[0]) {
-        const fs1 = Math.min(bw * 0.065, 22);
-        ctx.font = `900 ${fs1}px ${UI_FONT}`;
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillText(finishOrder[0].name, bx + bw / 2, by + 46);
-        ctx.strokeStyle = '#1f3650';
-        ctx.lineWidth = 2;
-        ctx.strokeText(finishOrder[0].name, bx + bw / 2, by + 46);
+      // 타이틀 배지
+      const tBadgeW = Math.min(bw * 0.65, 170);
+      const tBadgeH = 28;
+      const tBadgeX = cx - tBadgeW / 2;
+      const tBadgeY = by + 16;
+      ctx.fillStyle = '#1f3650';
+      ctx.beginPath(); ctx.roundRect(tBadgeX, tBadgeY + 4, tBadgeW, tBadgeH, 14); ctx.fill();
+      ctx.fillStyle = '#5ab5f0';
+      ctx.beginPath(); ctx.roundRect(tBadgeX, tBadgeY, tBadgeW, tBadgeH, 14); ctx.fill();
+      ctx.strokeStyle = '#1f3650'; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.font = `900 ${Math.min(bw * 0.055, 15)}px ${UI_FONT}`;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('오늘의 매머드', cx, tBadgeY + tBadgeH / 2 + 1);
 
-        ctx.font = `900 ${fs1 * 0.55}px ${UI_FONT}`;
-        ctx.fillStyle = '#a9cdff';
-        ctx.fillText('1ST PLACE', bx + bw / 2, by + 46 + fs1 + 4);
-      }
+      // 등수 뱃지
+      const rankLabel = ['1ST', '2ND', '3RD'][focusRank - 1] || `${focusRank}TH`;
+      const badgeW = 56, badgeH = 22;
+      ctx.fillStyle = '#1f3650';
+      ctx.beginPath(); ctx.roundRect(cx - badgeW / 2, by + 58 + 3, badgeW, badgeH, 11); ctx.fill();
+      ctx.fillStyle = resultMammoth.color;
+      ctx.beginPath(); ctx.roundRect(cx - badgeW / 2, by + 58, badgeW, badgeH, 11); ctx.fill();
+      ctx.strokeStyle = '#1f3650'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.font = `900 12px ${UI_FONT}`;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(rankLabel, cx, by + 58 + badgeH / 2 + 1);
 
-      // 포디움: 2등, 3등
-      const podiumY = by + bh - 52;
-      const podiumCols = [];
-      if (finishOrder[1]) podiumCols.push({ m: finishOrder[1], rank: 2, medal: '2ND' });
-      if (finishOrder[2]) podiumCols.push({ m: finishOrder[2], rank: 3, medal: '3RD' });
+      // 색상 원
+      const circleY = by + bh * 0.58;
+      ctx.fillStyle = resultMammoth.color;
+      ctx.beginPath(); ctx.arc(cx, circleY, bw * 0.1, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#1f3650'; ctx.lineWidth = 3; ctx.stroke();
 
-      if (podiumCols.length > 0) {
-        const colW = bw / (podiumCols.length + 1);
-        podiumCols.forEach((p, i) => {
-          const cx = bx + colW * (i + 1);
-          ctx.font = `900 ${Math.min(14, bw * 0.042)}px ${UI_FONT}`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'top';
-          ctx.fillStyle = '#ffe77a';
-          ctx.fillText(p.medal, cx, podiumY);
-
-          ctx.fillStyle = p.m.color;
-          ctx.beginPath();
-          ctx.arc(cx, podiumY + 24, 4, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-
-          const fs = Math.min(11, bw * 0.032);
-          ctx.font = `900 ${fs}px ${UI_FONT}`;
-          ctx.fillStyle = '#d5e6ff';
-          let dn = p.m.name;
-          if (ctx.measureText(dn).width > colW - 10) {
-            while (ctx.measureText(dn + '…').width > colW - 10 && dn.length > 1) dn = dn.slice(0, -1);
-            dn += '…';
-          }
-          ctx.fillText(dn, cx, podiumY + 32);
-        });
-      }
+      // 이름
+      const nameFs = Math.min(bw * 0.1, 30);
+      ctx.font = `900 ${nameFs}px ${UI_FONT}`;
+      ctx.fillStyle = '#1f3650';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(resultMammoth.name, cx, by + bh * 0.82);
 
       ctx.globalAlpha = 1;
     }
@@ -1729,21 +1670,15 @@
       drawFlash();
       drawConfetti();
       drawResultBanner();
-      drawPausedOverlay();
       drawCountdown(now);
       drawGoFlash(now);
     }
 
     function loop(now) {
       if (!mammoths.length) { render(performance.now()); return; }
-      if (!racePaused) { updateRace(now); updateClouds(); updateDust(); updateConfetti(); }
-      else if (raceFinished && resultBannerTarget > 0) {
-        // 일시정지 중에도 결과 배너 페이드는 진행
-        resultBannerAlpha = Math.min(1, resultBannerAlpha + 0.02);
-      }
+      updateRace(now); updateClouds(); updateDust(); updateConfetti();
       render(now);
-      const bannerAnimating = resultBannerTarget > 0 && resultBannerAlpha < 1;
-      if (raceRunning || confettiActive || (raceFinished && bannerAnimating)) requestAnimationFrame(loop);
+      if (raceRunning || confettiActive || (resultTriggered && resultBannerAlpha < 1)) requestAnimationFrame(loop);
       else render(performance.now());
     }
 
@@ -1754,8 +1689,6 @@
     const addMammothBtn = document.getElementById('addMammothBtn');
     const focusRankSelect = document.getElementById('focusRankSelect');
     const startBtn = document.getElementById('startBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const resetBtn = document.getElementById('resetBtn');
     const backBtn = document.getElementById('backBtn');
     const mammothCountEl = document.getElementById('mammothCount');
 
@@ -1951,7 +1884,6 @@
     function showRaceScreen() {
       setupScreen.classList.add('hidden');
       raceScreen.classList.add('active');
-      pauseBtn.textContent = '일시정지';
     }
     function showSetupScreen() {
       raceScreen.classList.remove('active');
@@ -1975,27 +1907,6 @@
       lastColors = colors;
       initRace(names, colors);
     }
-
-    pauseBtn.addEventListener('click', () => {
-      if (!raceRunning) return;
-      if (!racePaused) {
-        racePaused = true; pausedAt = performance.now();
-        pauseBtn.textContent = '재개';
-      } else {
-        racePaused = false;
-        pausedTotal += (performance.now() - pausedAt);
-        lastFrameTime = performance.now();
-        pausedAt = 0;
-        pauseBtn.textContent = '일시정지';
-        requestAnimationFrame(loop);
-      }
-    });
-
-    resetBtn.addEventListener('click', () => {
-      if (!lastNames || !lastNames.length) return;
-      pauseBtn.textContent = '일시정지';
-      initRace(lastNames, lastColors);
-    });
 
     backBtn.addEventListener('click', showSetupScreen);
 
