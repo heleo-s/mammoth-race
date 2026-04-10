@@ -467,8 +467,8 @@
   <script>
 
     const RACE_DURATION = 20000;
-    const TRACK_LENGTH = 4000;
-    const DISPLAY_METERS = 300;
+    const DISPLAY_METERS = 250;
+    const TRACK_LENGTH = Math.round(4000 * (DISPLAY_METERS / 300));
     const LANE_COUNT = 8;
     const BASE_SPEED = TRACK_LENGTH / (RACE_DURATION / 1000);
     const TRACK_BOTTOM_N = 0.88;
@@ -938,8 +938,8 @@
         // 정지: 맨 오른쪽 아래 프레임(frame 7) 고정 (호흡 효과는 y-bob으로)
         frameIdx = 7;
       } else {
-        // 달리기: 8프레임 10fps 루프
-        frameIdx = (SPRITE_FRAME_TOTAL - 1) - (Math.floor(phase * 10) % SPRITE_FRAME_TOTAL);
+        // 달리기: 누적 animFrame 기반 (dt × fps로 매 프레임 증가)
+        frameIdx = (SPRITE_FRAME_TOTAL - 1) - (Math.floor(m.animFrame) % SPRITE_FRAME_TOTAL);
       }
       const col = frameIdx % SPRITE_COLS;
       const row = Math.floor(frameIdx / SPRITE_COLS);
@@ -948,13 +948,13 @@
       const dispW = (fw / fh) * dispH;
 
       // 정지 호흡 bob (달리기 중엔 0)
-      const idleBob = phase <= 0 ? Math.sin(performance.now() / 700) * 1.2 : 0;
+      const idleBob = phase <= 0 ? (Math.cos(performance.now() / 350) - 1) * 0.7 : 0;
 
       // 그림자: 발 위치 기준
       ctx.save();
       ctx.fillStyle = 'rgba(0,0,0,0.14)';
       ctx.beginPath();
-      ctx.ellipse(sx, by + dispH * 0.29, dispW * 0.36, dispH * 0.055, 0, 0, Math.PI * 2);
+      ctx.ellipse(sx, by + dispH * 0.29 + idleBob, dispW * 0.36, dispH * 0.055, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
@@ -1327,7 +1327,7 @@
           colliding: false,
           collideTimer: 0,
           finished: false, index: i,
-          burstTimer: 0, burstAmount: 0, stumbleTimer: 0
+          burstTimer: 0, burstAmount: 0, stumbleTimer: 0, smoothVel: BASE_SPEED, animFrame: 0
         });
       }
 
@@ -1481,6 +1481,10 @@
           m.velocity += (1 - m.x / TRACK_LENGTH) * (6000 - remaining) / 6000 * (BASE_SPEED * 0.1);
         }
 
+        m.velocity = Math.max(BASE_SPEED * 0.3, Math.min(BASE_SPEED * 1.6, m.velocity));
+        m.smoothVel += (m.velocity - m.smoothVel) * 0.05;
+        const fps = Math.max(6, Math.min(10, 8 + (m.smoothVel / BASE_SPEED - 1) * 4));
+        m.animFrame += fps * (dt / 1000);
         m.x += (m.velocity * dt) / 1000;
         if (m.x >= TRACK_LENGTH) {
           m.x = TRACK_LENGTH; m.finished = true; finishOrder.push(m);
