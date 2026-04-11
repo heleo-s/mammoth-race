@@ -426,13 +426,37 @@
     <div class="race-canvas-wrap" id="canvasWrap">
       <canvas id="raceCanvas"></canvas>
       <button class="btn-back-float" id="backBtn">&#8592;</button>
+      <div id="rankingOverlay" style="
+        display:none; position:absolute; left:0; top:0;
+        pointer-events:none; z-index:5;
+      "></div>
+      <div id="resultNameOverlay" style="
+        display:none; position:absolute; left:0; top:0; width:100%; height:100%;
+        pointer-events:none; z-index:10;
+      ">
+        <div id="resultTitleText" style="
+          position:absolute; transform:translateX(-50%);
+          font-family:'Jua','Black Han Sans',sans-serif; font-weight:900;
+          color:#ffffff; text-align:center; white-space:nowrap;
+        ">오늘의 매머드</div>
+        <div id="resultRankText" style="
+          position:absolute; transform:translateX(-50%);
+          font-family:'Jua','Black Han Sans',sans-serif; font-weight:900;
+          color:#ffffff; text-align:center; white-space:nowrap;
+        "></div>
+        <div id="resultNameText" style="
+          position:absolute; left:50%; transform:translateX(-50%);
+          font-family:'Jua','Black Han Sans',sans-serif; font-weight:900;
+          color:#1f3650; text-align:center; white-space:nowrap;
+        "></div>
+      </div>
     </div>
   </div>
 
   <script>
 
-    const RACE_DURATION = 20000;
-    const DISPLAY_METERS = 200;
+    const RACE_DURATION = 15000;
+    const DISPLAY_METERS = 300;
     const TRACK_LENGTH = Math.round(4000 * (DISPLAY_METERS / 300));
     const LANE_COUNT = 8;
     const BASE_SPEED = TRACK_LENGTH / (RACE_DURATION / 1000);
@@ -534,7 +558,7 @@
       'city-far', 'city-near', 'river',
       'grass', 'track', 'trees', 'clouds', 'shrubs'
     ];
-    const PNG_ASSET_NAMES = ['running_mammoth_sprite_sheet'];
+    const PNG_ASSET_NAMES = ['running_mammoth_sprite_sheet', 'snowy_track'];
     const assets = {};
     let assetsLoaded = false;
 
@@ -769,14 +793,16 @@
         drawTiledLayer(assets['trees'], grassY, grassH, 0.04);
       }
 
-      // Bottom area below the track: green fill + shrubs
-      const shrubY = tBot;
-      const shrubH = H - tBot;
-      if (shrubH > 0) {
-        ctx.fillStyle = '#3d7e22';
-        ctx.fillRect(0, shrubY, W, shrubH);
-        if (hasAsset('shrubs')) {
-          drawTiledLayer(assets['shrubs'], shrubY, shrubH, 0.03);
+      // Bottom area below the track: snowy_track이 덮으므로 생략
+      if (!hasAsset('snowy_track')) {
+        const shrubY = tBot;
+        const shrubH = H - tBot;
+        if (shrubH > 0) {
+          ctx.fillStyle = '#3d7e22';
+          ctx.fillRect(0, shrubY, W, shrubH);
+          if (hasAsset('shrubs')) {
+            drawTiledLayer(assets['shrubs'], shrubY, shrubH, 0.03);
+          }
         }
       }
     }
@@ -786,8 +812,14 @@
       const { tTop, tBot } = getTrackBounds();
       const trackH = tBot - tTop;
 
-      // track.svg as the base
-      if (hasAsset('track')) {
+      if (hasAsset('snowy_track')) {
+        // 울타리 기둥 하단 ≈ 이미지 상단 35% 지점 → tTop에 맞추고, 이미지 하단은 화면 끝까지
+        const img = assets['snowy_track'];
+        const fenceRatio = 0.35;
+        const snowH = (H - tTop) / (1 - fenceRatio);
+        const snowY = tTop - fenceRatio * snowH;
+        drawTiledLayer(img, snowY, snowH, BASE_WORLD_SCALE);
+      } else if (hasAsset('track')) {
         drawTiledLayer(assets['track'], tTop, trackH, 0);
       } else {
         ctx.fillStyle = '#c4a060';
@@ -829,25 +861,20 @@
         ctx.fillText(label, sx, tBot + 5);
       }
 
-      // Finish line (checkerboard + gate)
+      // Finish line (checkerboard + gate) — 울타리 아래부터 화면 끝까지
       const fsx = worldToScreenX(TRACK_LENGTH);
       if (fsx > -60 && fsx < W + 60) {
         const ss = 6, fw = 16;
+        const finishTop = tTop + trackH * 0.15;
+        const finishH = H - finishTop;
 
-        for (let r = 0; r < Math.ceil(trackH / ss); r++) {
+        for (let r = 0; r < Math.ceil(finishH / ss); r++) {
           for (let c = 0; c < Math.ceil(fw / ss); c++) {
             ctx.fillStyle = (r + c) % 2 === 0 ? 'rgba(255,255,255,0.92)' : 'rgba(20,20,30,0.88)';
-            ctx.fillRect(fsx - fw / 2 + c * ss, tTop + r * ss, ss, ss);
+            ctx.fillRect(fsx - fw / 2 + c * ss, finishTop + r * ss, ss, ss);
           }
         }
 
-        ctx.font = 'bold 11px system-ui';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.fillText('FINISH', fsx + 1, tTop - 20);
-        ctx.fillStyle = '#c0280a';
-        ctx.fillText('FINISH', fsx, tTop - 21);
       }
 
       // Start line
@@ -1086,9 +1113,10 @@
     // ===== 미니맵 + 순위 오버레이 =====
     function drawOverlayPanel() {
       const pad = 8;
-      const panelW = Math.min(W * 0.52, 210);
+      const btnSpace = 40 + 10; // 뒤로가기 버튼(40) + right(10)
+      const panelW = Math.min(W - btnSpace - pad, 400);
       const miniH = 38;
-      const x = pad, y = pad;
+      const x = pad, y = 10;
       const r = 10;
       const CARD = '#f0f8ff';
       const OUTLINE = '#1f3650';
@@ -1132,47 +1160,65 @@
       if (!mammoths.length) return;
       const ranking = getCurrentRanking();
       const rankY = y + miniH + 8;
-      const rowH = 19;
-      const rankH = ranking.length * rowH + 10;
+      const rankScale = 1.25;
+      const rankW = Math.min(panelW * 0.42, 140) * rankScale;
+      const rowH = Math.round(19 * rankScale);
+      const rankH = ranking.length * rowH + Math.round(10 * rankScale);
 
       ctx.fillStyle = OUTLINE;
-      ctx.beginPath(); ctx.roundRect(x, rankY + 4, panelW, rankH, r); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(x, rankY + 4, rankW, rankH, r); ctx.fill();
       ctx.fillStyle = CARD;
-      ctx.beginPath(); ctx.roundRect(x, rankY, panelW, rankH, r); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(x, rankY, rankW, rankH, r); ctx.fill();
       ctx.strokeStyle = OUTLINE; ctx.lineWidth = 2.5; ctx.stroke();
 
       ranking.forEach(({ rank, m }, i) => {
-        const ry = rankY + 5 + i * rowH;
+        const ry = rankY + Math.round(5 * rankScale) + i * rowH;
         const isFocus = rank === focusRank;
-        const isFinished = finishOrder.includes(m);
 
         if (isFocus) {
           ctx.fillStyle = 'rgba(90,181,240,0.22)';
-          ctx.beginPath(); ctx.roundRect(x + 3, ry, panelW - 6, rowH, 5); ctx.fill();
+          ctx.beginPath(); ctx.roundRect(x + 3, ry, rankW - 6, rowH, 5 * rankScale); ctx.fill();
         }
 
-        ctx.font = `900 11px ${UI_FONT}`;
-        ctx.fillStyle = rank <= 3 ? '#c8920a' : OUTLINE;
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(`${rank}`, x + 8, ry + rowH / 2);
-
+        // 색상 원 (캔버스)
         ctx.fillStyle = m.color;
-        ctx.beginPath(); ctx.arc(x + 24, ry + rowH / 2, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + 30 * rankScale, ry + rowH / 2, 4 * rankScale, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = OUTLINE; ctx.lineWidth = 1; ctx.stroke();
+      });
 
-        ctx.font = `900 11px ${UI_FONT}`;
-        ctx.fillStyle = OUTLINE;
-        ctx.textAlign = 'left';
-        const maxNW = panelW - 72;
-        let dn = m.name;
-        while (ctx.measureText(dn).width > maxNW && dn.length > 2) dn = dn.slice(0, -1);
-        if (dn !== m.name) dn += '…';
-        ctx.fillText(dn, x + 34, ry + rowH / 2);
-
-        ctx.font = `900 10px ${UI_FONT}`;
-        ctx.fillStyle = isFinished ? '#c8920a' : 'rgba(31,54,80,0.5)';
-        ctx.textAlign = 'right';
-        ctx.fillText(isFinished ? 'FINISH' : `${toMeters(m.x)}m`, x + panelW - 6, ry + rowH / 2);
+      // 순위 텍스트 — DOM
+      const rankOverlay = document.getElementById('rankingOverlay');
+      rankOverlay.style.display = 'block';
+      // 필요한 만큼 row div 확보
+      while (rankOverlay.children.length < ranking.length) {
+        const row = document.createElement('div');
+        row.style.cssText = `position:absolute;display:flex;align-items:center;font-family:"Jua","Black Han Sans",sans-serif;font-weight:900;font-size:${Math.round(11*rankScale)}px;white-space:nowrap;`;
+        const sNum = document.createElement('span');
+        sNum.style.cssText = `width:${Math.round(12*rankScale)}px;text-align:right;`;
+        const sName = document.createElement('span');
+        sName.style.cssText = `flex:1;overflow:hidden;text-overflow:ellipsis;margin-left:${Math.round(22*rankScale)}px;color:#1f3650;`;
+        const sDist = document.createElement('span');
+        sDist.style.cssText = `text-align:right;font-size:${Math.round(10*rankScale)}px;margin-left:${Math.round(4*rankScale)}px;`;
+        row.appendChild(sNum); row.appendChild(sName); row.appendChild(sDist);
+        rankOverlay.appendChild(row);
+      }
+      // 숨기기 (매머드 줄었을 때)
+      for (let i = 0; i < rankOverlay.children.length; i++) {
+        rankOverlay.children[i].style.display = i < ranking.length ? 'flex' : 'none';
+      }
+      ranking.forEach(({ rank, m }, i) => {
+        const ry = rankY + Math.round(5 * rankScale) + i * rowH;
+        const isFinished = finishOrder.includes(m);
+        const row = rankOverlay.children[i];
+        row.style.left = (x + Math.round(8 * rankScale)) + 'px';
+        row.style.top = (ry + rowH / 2 - Math.round(7 * rankScale)) + 'px';
+        row.style.width = (rankW - Math.round(14 * rankScale)) + 'px';
+        const [sNum, sName, sDist] = row.children;
+        sNum.textContent = rank;
+        sNum.style.color = rank <= 3 ? '#c8920a' : '#1f3650';
+        sName.textContent = m.name;
+        sDist.textContent = isFinished ? 'FINISH' : `${toMeters(m.x)}m`;
+        sDist.style.color = isFinished ? '#c8920a' : 'rgba(31,54,80,0.5)';
       });
     }
 
@@ -1215,16 +1261,18 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
+      // 그림자
       ctx.fillStyle = 'rgba(0,0,0,0.2)';
       ctx.fillText(text, 2, 2);
 
-      ctx.fillStyle = TITLE_GOLD;
-      ctx.fillText(text, 0, 0);
-
-      // 외곽선
+      // 외곽선 먼저 → 채우기 위에 올려서 엣지 선명하게
       ctx.strokeStyle = TITLE_BROWN;
       ctx.lineWidth = 6;
+      ctx.lineJoin = 'round';
       ctx.strokeText(text, 0, 0);
+
+      ctx.fillStyle = TITLE_GOLD;
+      ctx.fillText(text, 0, 0);
 
       ctx.restore();
       ctx.globalAlpha = 1;
@@ -1253,12 +1301,13 @@
       ctx.fillStyle = 'rgba(0,0,0,0.15)';
       ctx.fillText('GO!', 2, 2);
 
-      ctx.fillStyle = TITLE_GOLD;
-      ctx.fillText('GO!', 0, 0);
-
       ctx.strokeStyle = TITLE_BROWN;
       ctx.lineWidth = 6;
+      ctx.lineJoin = 'round';
       ctx.strokeText('GO!', 0, 0);
+
+      ctx.fillStyle = TITLE_GOLD;
+      ctx.fillText('GO!', 0, 0);
 
       ctx.restore();
       ctx.globalAlpha = 1;
@@ -1280,6 +1329,8 @@
       confettiParticles = []; confettiActive = false;
       resultBannerAlpha = 0; resultBannerTarget = 0;
       resultTriggered = false; resultMammoth = null;
+      document.getElementById('resultNameOverlay').style.display = 'none';
+      document.getElementById('rankingOverlay').style.display = 'none';
       flashAlpha = 0;
       const lc = Math.min(LANE_COUNT, n);
       lastNames = [...names];
@@ -1542,23 +1593,26 @@
       ctx.fillStyle = '#5ab5f0';
       ctx.beginPath(); ctx.roundRect(tBadgeX, tBadgeY, tBadgeW, tBadgeH, 14); ctx.fill();
       ctx.strokeStyle = '#1f3650'; ctx.lineWidth = 2.5; ctx.stroke();
-      ctx.font = `900 ${Math.min(bw * 0.055, 15)}px ${UI_FONT}`;
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('오늘의 매머드', cx, tBadgeY + tBadgeH / 2 + 1);
+      // "오늘의 매머드" — DOM 폰트
+      const titleEl = document.getElementById('resultTitleText');
+      titleEl.style.fontSize = Math.min(bw * 0.055, 15) + 'px';
+      titleEl.style.top = (tBadgeY + tBadgeH / 2 - Math.min(bw * 0.055, 15) * 0.55) + 'px';
+      titleEl.style.left = cx + 'px';
 
       // 등수 뱃지
       const rankLabel = ['1ST', '2ND', '3RD'][focusRank - 1] || `${focusRank}TH`;
       const badgeW = 56, badgeH = 22;
       ctx.fillStyle = '#1f3650';
       ctx.beginPath(); ctx.roundRect(cx - badgeW / 2, by + 58 + 3, badgeW, badgeH, 11); ctx.fill();
-      ctx.fillStyle = resultMammoth.color;
+      ctx.fillStyle = '#1f3650';
       ctx.beginPath(); ctx.roundRect(cx - badgeW / 2, by + 58, badgeW, badgeH, 11); ctx.fill();
       ctx.strokeStyle = '#1f3650'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.font = `900 12px ${UI_FONT}`;
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(rankLabel, cx, by + 58 + badgeH / 2 + 1);
+      // 등수 — DOM 폰트
+      const rankEl = document.getElementById('resultRankText');
+      rankEl.textContent = rankLabel;
+      rankEl.style.fontSize = '12px';
+      rankEl.style.top = (by + 58 + badgeH / 2 - 7) + 'px';
+      rankEl.style.left = cx + 'px';
 
       // 색상 원
       const circleY = by + bh * 0.58;
@@ -1566,12 +1620,15 @@
       ctx.beginPath(); ctx.arc(cx, circleY, bw * 0.1, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#1f3650'; ctx.lineWidth = 3; ctx.stroke();
 
-      // 이름
+      // 이름 — DOM 폰트로 렌더링
       const nameFs = Math.min(bw * 0.1, 30);
-      ctx.font = `900 ${nameFs}px ${UI_FONT}`;
-      ctx.fillStyle = '#1f3650';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(resultMammoth.name, cx, by + bh * 0.82);
+      const nameEl = document.getElementById('resultNameText');
+      const overlayEl = document.getElementById('resultNameOverlay');
+      overlayEl.style.display = 'block';
+      overlayEl.style.opacity = resultBannerAlpha;
+      nameEl.textContent = resultMammoth.name;
+      nameEl.style.fontSize = nameFs + 'px';
+      nameEl.style.top = (by + bh * 0.82 - nameFs * 0.55) + 'px';
 
       ctx.globalAlpha = 1;
     }
