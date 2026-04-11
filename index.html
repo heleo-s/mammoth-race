@@ -425,7 +425,7 @@
       <!-- 순위표 DOM -->
       <div id="rankPanel" style="
         display:none; position:absolute; pointer-events:none; z-index:5;
-        font-family:'Jua','Black Han Sans',sans-serif;
+        font-family:'Jua','Black Han Sans',sans-serif; overflow:hidden;
       ">
         <div id="rankCard" style="
           background:#f0f8ff; border:3px solid #1f3650; border-radius:10px;
@@ -437,7 +437,7 @@
       <!-- 결과 딤 -->
       <div id="resultDimOverlay" style="
         display:none; position:absolute; left:0; top:0; width:100%; height:100%;
-        background:rgba(15,30,55,0.45); pointer-events:none; z-index:8;
+        pointer-events:none; z-index:8;
       "></div>
       <!-- 결과 배너 DOM -->
       <div id="resultBannerDom" style="
@@ -1364,7 +1364,8 @@
       }
       rankPanel.style.left = x + 'px';
       rankPanel.style.top = rankY + 'px';
-      rankCard.style.width = rankW + 'px';
+      rankPanel.style.width = rankW + 'px';
+      rankCard.style.width = '100%';
 
       // 행 확보
       while (rankRows.children.length < ranking.length) {
@@ -1743,7 +1744,11 @@
 
     // ===== 결과 배너 — 전체 DOM =====
     function drawResultDim() {
-      // 캔버스 딤은 더 이상 사용 안 함 — DOM dimOverlay가 처리
+      if (resultBannerAlpha <= 0 || !resultMammoth) return;
+      ctx.globalAlpha = resultBannerAlpha;
+      ctx.fillStyle = 'rgba(15,30,55,0.45)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
     }
 
     function drawResultBanner() {
