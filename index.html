@@ -540,14 +540,9 @@
     let focusRank = 1;
     let cameraX = 0;
     let worldScale = ZOOM_DEFAULT;
-    let cameraPrevTargetIndex = -1;
-    let cameraSmoothRetarget = false;
     let lastFrameTime = 0;
-    let cloudParticles = [];
     let dustParticles = [];
     let finishOrder = [];
-    let lastNames = null;
-    let lastColors = null;
 
     let countdownActive = false;
     let countdownStart = 0;
@@ -582,28 +577,21 @@
       '#8B4513', //      갈색
     ];
 
-    // ===== SVG image asset loader =====
+    // ===== PNG 에셋 로더 =====
     const ASSET_BASE = 'assets/';
-    const SVG_ASSET_NAMES = [];
-    const PNG_ASSET_NAMES = ['running_mammoth_sprite_sheet', 'snowy_track', 'result_mmt', 'fx_sheet_alpha', 'dust_fx_reference_alpha', 'middle_1', 'middle_2', 'middle_3', 'far_1', 'far_2', 'far_3', 'far_4'];
+    const ASSET_NAMES = ['running_mammoth_sprite_sheet', 'snowy_track', 'result_mmt', 'fx_sheet_alpha', 'dust_fx_reference_alpha', 'middle_1', 'middle_2', 'middle_3', 'far_1', 'far_2', 'far_3', 'far_4'];
     const assets = {};
     let assetsLoaded = false;
 
     function loadAssets(callback) {
       let loaded = 0;
-      const total = SVG_ASSET_NAMES.length + PNG_ASSET_NAMES.length;
+      const total = ASSET_NAMES.length;
       function onDone(name, img) {
         assets[name] = img;
         loaded++;
         if (loaded === total) { assetsLoaded = true; if (callback) callback(); }
       }
-      for (const name of SVG_ASSET_NAMES) {
-        const img = new Image();
-        img.onload = () => onDone(name, img);
-        img.onerror = () => onDone(name, null);
-        img.src = ASSET_BASE + name + '.svg';
-      }
-      for (const name of PNG_ASSET_NAMES) {
+      for (const name of ASSET_NAMES) {
         const img = new Image();
         img.onload = () => onDone(name, img);
         img.onerror = () => onDone(name, null);
@@ -656,51 +644,6 @@
       }
     }
 
-    // ===== Clouds (SVG image based) =====
-    function initClouds() {
-      cloudParticles = [];
-      for (let i = 0; i < 14; i++) {
-        cloudParticles.push({
-          x: Math.random() * W * 5 - W,
-          y: H * 0.02 + Math.random() * H * 0.18,
-          w: 70 + Math.random() * 100,
-          h: 25 + Math.random() * 20,
-          speed: 0.05 + Math.random() * 0.12,
-          opacity: 0.5 + Math.random() * 0.4,
-        });
-      }
-    }
-    function updateClouds() {
-      for (const c of cloudParticles) {
-        c.x += c.speed;
-        if (c.x - c.w > W * 2.5) c.x = -c.w * 1.5 - W * 0.5;
-      }
-    }
-    function drawClouds() {
-      const img = assets['clouds'];
-      for (const c of cloudParticles) {
-        const sx = c.x - cameraX * 0.008;
-        if (sx + c.w < -40 || sx - c.w > W + 40) continue;
-        ctx.globalAlpha = c.opacity;
-        if (hasAsset('clouds')) {
-          ctx.drawImage(img, sx - c.w / 2, c.y - c.h / 2, c.w, c.h);
-        } else {
-          ctx.fillStyle = '#fff';
-          ctx.beginPath();
-          ctx.ellipse(sx, c.y, c.w / 2, c.h / 2, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.ellipse(sx - c.w * 0.25, c.y + 2, c.w * 0.35, c.h * 0.4, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.ellipse(sx + c.w * 0.25, c.y + 1, c.w * 0.3, c.h * 0.35, 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-      ctx.globalAlpha = 1;
-    }
-
-    // ===== Dust =====
     // ===== 더스트 FX (스프라이트 시트 기반) =====
     // fx_sheet_alpha: 6열 × 4행, 3행=보통속도, 4행=느린속도
     // dust_fx_reference_alpha: 2행 × 6열 (12프레임), 2~6번 좌우반전
@@ -730,7 +673,6 @@
       [613, 698, 82,  28],  // 11 (sprite46)
     ];
 
-    function spawnDust() {} // 호환용 빈 함수
     function updateDust(dt) {
       for (const m of mammoths) {
         if (!raceRunning || racePaused || countdownActive) continue;
@@ -886,11 +828,11 @@
       ctx.globalAlpha = 1;
     }
 
-    // ===== SVG Background Drawing =====
+    // ===== 배경 렌더링 =====
     function drawBackground() {
       const { tTop, tBot } = getTrackBounds();
 
-      // Sky: sky.svg stretched to fill 0 to H*0.42
+      // 하늘 그라데이션
       // 하늘 그라데이션
       const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
       skyGrad.addColorStop(0, '#5aa8e6');
@@ -1025,7 +967,7 @@
 
     }
 
-    // ===== Track (SVG base + canvas overlays) =====
+    // ===== 트랙 렌더링 =====
     function drawTrack() {
       const { tTop, tBot } = getTrackBounds();
       const trackH = tBot - tTop;
@@ -1412,9 +1354,9 @@
       const rankW = Math.min(panelW * 0.42, 140) * rankScale;
       const rowH = Math.round(19 * rankScale);
 
-      const rankPanel = document.getElementById('rankPanel');
-      const rankCard = document.getElementById('rankCard');
-      const rankRows = document.getElementById('rankRows');
+      const rankPanel = rankPanelEl;
+      const rankCard = rankCardEl;
+      const rankRows = rankRowsEl;
       rankPanel.style.display = 'block';
       rankPanel.style.left = x + 'px';
       rankPanel.style.top = rankY + 'px';
@@ -1456,6 +1398,8 @@
     }
 
     // ===== 카운트다운 =====
+    const _textBuf = document.createElement('canvas');
+    const _textBufCtx = _textBuf.getContext('2d');
     function startCountdown(callback) {
       countdownActive = true;
       countdownStart = performance.now();
@@ -1483,31 +1427,28 @@
       const scale = 0.6 + frac * 0.8;
       const alpha = Math.min(1, frac * 2.5);
 
-      // 오프스크린에 불투명으로 그린 뒤 알파 적용 (fill/stroke 믹싱 방지)
       const fontSize = Math.min(W * 0.25, 120);
-      const buf = document.createElement('canvas');
       const bsz = Math.ceil(fontSize * 2.5);
-      buf.width = bsz; buf.height = bsz;
-      const bctx = buf.getContext('2d');
-      bctx.font = `900 ${fontSize}px ${UI_FONT}`;
-      bctx.textAlign = 'center';
-      bctx.textBaseline = 'middle';
+      _textBuf.width = bsz; _textBuf.height = bsz;
+      _textBufCtx.font = `900 ${fontSize}px ${UI_FONT}`;
+      _textBufCtx.textAlign = 'center';
+      _textBufCtx.textBaseline = 'middle';
       const bc = bsz / 2;
 
-      bctx.fillStyle = 'rgba(0,0,0,0.2)';
-      bctx.fillText(text, bc + 2, bc + 2);
-      bctx.strokeStyle = TITLE_BROWN;
-      bctx.lineWidth = 6;
-      bctx.lineJoin = 'round';
-      bctx.strokeText(text, bc, bc);
-      bctx.fillStyle = TITLE_GOLD;
-      bctx.fillText(text, bc, bc);
+      _textBufCtx.fillStyle = 'rgba(0,0,0,0.2)';
+      _textBufCtx.fillText(text, bc + 2, bc + 2);
+      _textBufCtx.strokeStyle = TITLE_BROWN;
+      _textBufCtx.lineWidth = 6;
+      _textBufCtx.lineJoin = 'round';
+      _textBufCtx.strokeText(text, bc, bc);
+      _textBufCtx.fillStyle = TITLE_GOLD;
+      _textBufCtx.fillText(text, bc, bc);
 
       ctx.save();
       ctx.translate(W / 2, H * 0.42);
       ctx.scale(scale, scale);
       ctx.globalAlpha = alpha;
-      ctx.drawImage(buf, -bc, -bc);
+      ctx.drawImage(_textBuf, -bc, -bc);
       ctx.restore();
       ctx.globalAlpha = 1;
     }
@@ -1523,29 +1464,27 @@
       const scale = 1 + frac * 0.3;
 
       const fontSize = Math.min(W * 0.2, 100);
-      const buf = document.createElement('canvas');
       const bsz = Math.ceil(fontSize * 2.5);
-      buf.width = bsz; buf.height = bsz;
-      const bctx = buf.getContext('2d');
-      bctx.font = `900 ${fontSize}px ${UI_FONT}`;
-      bctx.textAlign = 'center';
-      bctx.textBaseline = 'middle';
+      _textBuf.width = bsz; _textBuf.height = bsz;
+      _textBufCtx.font = `900 ${fontSize}px ${UI_FONT}`;
+      _textBufCtx.textAlign = 'center';
+      _textBufCtx.textBaseline = 'middle';
       const bc = bsz / 2;
 
-      bctx.fillStyle = 'rgba(0,0,0,0.15)';
-      bctx.fillText('GO!', bc + 2, bc + 2);
-      bctx.strokeStyle = TITLE_BROWN;
-      bctx.lineWidth = 6;
-      bctx.lineJoin = 'round';
-      bctx.strokeText('GO!', bc, bc);
-      bctx.fillStyle = TITLE_GOLD;
-      bctx.fillText('GO!', bc, bc);
+      _textBufCtx.fillStyle = 'rgba(0,0,0,0.15)';
+      _textBufCtx.fillText('GO!', bc + 2, bc + 2);
+      _textBufCtx.strokeStyle = TITLE_BROWN;
+      _textBufCtx.lineWidth = 6;
+      _textBufCtx.lineJoin = 'round';
+      _textBufCtx.strokeText('GO!', bc, bc);
+      _textBufCtx.fillStyle = TITLE_GOLD;
+      _textBufCtx.fillText('GO!', bc, bc);
 
       ctx.save();
       ctx.translate(W / 2, H * 0.42);
       ctx.scale(scale, scale);
       ctx.globalAlpha = alpha;
-      ctx.drawImage(buf, -bc, -bc);
+      ctx.drawImage(_textBuf, -bc, -bc);
       ctx.restore();
       ctx.globalAlpha = 1;
     }
@@ -1566,14 +1505,11 @@
       confettiParticles = []; confettiActive = false;
       resultBannerAlpha = 0; resultBannerTarget = 0;
       resultTriggered = false; resultMammoth = null;
-      document.getElementById('resultBannerDom').style.display = 'none';
-      document.getElementById('resultDimOverlay').style.display = 'none';
-      document.getElementById('rankPanel').style.display = 'none';
+      resultBannerEl.style.display = 'none';
+      resultDimEl.style.display = 'none';
+      rankPanelEl.style.display = 'none';
       flashAlpha = 0;
       const lc = Math.min(LANE_COUNT, n);
-      lastNames = [...names];
-      lastColors = colors ? [...colors] : null;
-
       // 출발 순서 랜덤 셔플
       const order = Array.from({length: n}, (_, i) => i);
       for (let i = n - 1; i > 0; i--) {
@@ -1598,15 +1534,12 @@
         });
       }
 
-      initClouds();
       raceStartTime = performance.now();
       raceRunning = true; raceFinished = false;
       resultTriggered = false; resultMammoth = null;
       racePaused = false; pausedAt = 0; pausedTotal = 0;
       cameraX = 0;
       worldScale = ZOOM_DEFAULT;
-      cameraPrevTargetIndex = -1;
-      cameraSmoothRetarget = false;
       lastFrameTime = raceStartTime;
       resizeCanvas();
 
@@ -1810,22 +1743,22 @@
       const bw = Math.min(W * 0.85, 340);
       const bh = Math.min(H * 0.65, 360);
 
-      const dimEl = document.getElementById('resultDimOverlay');
+      const dimEl = resultDimEl;
       dimEl.style.display = 'block';
       dimEl.style.opacity = resultBannerAlpha;
 
-      const banner = document.getElementById('resultBannerDom');
+      const banner = resultBannerEl;
       banner.style.display = 'block';
       banner.style.opacity = resultBannerAlpha;
 
-      const card = document.getElementById('resultCard');
+      const card = resultCardEl;
       card.style.width = bw + 'px';
       card.style.height = bh + 'px';
       card.style.left = ((W - bw) / 2) + 'px';
       card.style.top = ((H - bh) / 2) + 'px';
 
       // 타이틀 배지
-      const titleBadge = document.getElementById('resultTitleBadge');
+      const titleBadge = resultTitleBadgeEl;
       titleBadge.style.width = Math.min(bw * 0.65, 170) + 'px';
       titleBadge.style.height = '28px';
       titleBadge.style.lineHeight = '28px';
@@ -1833,7 +1766,7 @@
 
       // 등수 배지
       const rankLabel = ['1ST', '2ND', '3RD'][focusRank - 1] || `${focusRank}TH`;
-      const rankBadge = document.getElementById('resultRankBadge');
+      const rankBadge = resultRankBadgeEl;
       rankBadge.textContent = rankLabel;
       rankBadge.style.width = '56px';
       rankBadge.style.height = '22px';
@@ -1841,7 +1774,7 @@
       rankBadge.style.fontSize = '12px';
 
       // 캐릭터 이미지 — 작은 캔버스에 그려서 DOM에 표시
-      const charCanvas = document.getElementById('resultCharCanvas');
+      const charCanvas = resultCharCanvasEl;
       const mmtImg = getResultMmt(resultMammoth.color);
       const imgSize = Math.round(bh * 0.65);
       const dpr = window.devicePixelRatio || 1;
@@ -1858,13 +1791,13 @@
 
       // 컬러칩
       const chipSize = Math.round(Math.min(bw * 0.1, 30) * 0.6);
-      const colorChip = document.getElementById('resultColorChip');
+      const colorChip = resultColorChipEl;
       colorChip.style.width = chipSize + 'px';
       colorChip.style.height = chipSize + 'px';
       colorChip.style.background = resultMammoth.color;
 
       // 이름
-      const nameEl = document.getElementById('resultNameText');
+      const nameEl = resultNameTextEl;
       nameEl.textContent = resultMammoth.name;
       nameEl.style.fontSize = Math.min(bw * 0.1, 30) + 'px';
     }
@@ -1926,7 +1859,6 @@
       ctx.translate(-zoomCx, -zoomCy);
 
       drawBackground();
-      // drawClouds(); // 산 이미지에 구름 포함되어 있으므로 제거
       drawTrack();
       drawDust();
       const { offL, offR } = drawMammothsAndIndicators(now);
@@ -1948,7 +1880,7 @@
       if (!mammoths.length) { render(performance.now()); return; }
       const loopDt = Math.min(now - (loop._prev || now), 50);
       loop._prev = now;
-      updateRace(now); updateClouds(); updateDust(loopDt); updateConfetti();
+      updateRace(now); updateDust(loopDt); updateConfetti();
       render(now);
       if (raceRunning || confettiActive || (resultTriggered && resultBannerAlpha < 1)) requestAnimationFrame(loop);
       else render(performance.now());
@@ -1963,6 +1895,19 @@
     const startBtn = document.getElementById('startBtn');
     const backBtn = document.getElementById('backBtn');
     const mammothCountEl = document.getElementById('mammothCount');
+
+    // 레이스 UI DOM 캐싱
+    const rankPanelEl = document.getElementById('rankPanel');
+    const rankCardEl = document.getElementById('rankCard');
+    const rankRowsEl = document.getElementById('rankRows');
+    const resultBannerEl = document.getElementById('resultBannerDom');
+    const resultCardEl = document.getElementById('resultCard');
+    const resultTitleBadgeEl = document.getElementById('resultTitleBadge');
+    const resultRankBadgeEl = document.getElementById('resultRankBadge');
+    const resultCharCanvasEl = document.getElementById('resultCharCanvas');
+    const resultColorChipEl = document.getElementById('resultColorChip');
+    const resultNameTextEl = document.getElementById('resultNameText');
+    const resultDimEl = document.getElementById('resultDimOverlay');
 
     const MAX_MAMMOTHS = 12;
     const INITIAL_COUNT = 3;
@@ -2178,8 +2123,6 @@
     function initRaceWithData(data) {
       const names = data.map(d => d.name);
       const colors = data.map(d => d.color);
-      lastNames = names;
-      lastColors = colors;
       initRace(names, colors);
     }
 
