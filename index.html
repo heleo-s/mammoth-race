@@ -390,7 +390,10 @@
 
       <div class="field-group">
         <span class="field-label">몇 등이 커피를 살까요?</span>
-        <select id="focusRankSelect"></select>
+        <div style="display:flex;gap:8px;">
+          <select id="focusRankSelect" style="flex:1;"></select>
+          <select id="focusRankSelect2" style="flex:1;"></select>
+        </div>
       </div>
 
       <button class="btn-start" id="startBtn">레이스 시작</button>
@@ -441,24 +444,40 @@
             box-shadow:0 4px 0 #1f3650; color:#fff; font-weight:900;
             text-align:center; white-space:nowrap; margin-top:16px;
           ">오늘의 매머드</div>
-          <!-- 등수 배지 -->
-          <div id="resultRankBadge" style="
-            background:#1f3650; border:2px solid #1f3650; border-radius:11px;
-            box-shadow:0 3px 0 #1f3650; color:#fff; font-weight:900;
-            text-align:center; margin-top:8px;
-          "></div>
-          <!-- 캐릭터 이미지 -->
-          <canvas id="resultCharCanvas" style="margin-top:4px;"></canvas>
-          <!-- 이름 + 컬러칩 -->
-          <div id="resultNameRow" style="
-            display:flex; align-items:center; gap:6px; margin-bottom:6px;
+          <!-- 슬롯 컨테이너 (1명이면 단일, 2명이면 나란히) -->
+          <div id="resultSlots" style="
+            display:flex; justify-content:center; gap:0; margin-top:10px;
           ">
-            <div id="resultColorChip" style="
-              border-radius:50%; border:1.5px solid #1f3650;
-            "></div>
-            <div id="resultNameText" style="
-              font-weight:900; color:#1f3650; white-space:nowrap;
-            "></div>
+            <!-- 슬롯 1 -->
+            <div class="result-slot" style="
+              display:flex; flex-direction:column; align-items:center;
+            ">
+              <div class="rs-rank" style="
+                background:#1f3650; border:2px solid #1f3650; border-radius:11px;
+                box-shadow:0 3px 0 #1f3650; color:#fff; font-weight:900;
+                text-align:center; margin-top:8px;
+              "></div>
+              <canvas class="rs-char" style="margin-top:4px;"></canvas>
+              <div class="rs-name-row" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                <div class="rs-chip" style="border-radius:50%;border:1.5px solid #1f3650;"></div>
+                <div class="rs-name" style="font-weight:900;color:#1f3650;white-space:nowrap;"></div>
+              </div>
+            </div>
+            <!-- 슬롯 2 (옵션) -->
+            <div class="result-slot" style="
+              display:none; flex-direction:column; align-items:center; flex:1;
+            ">
+              <div class="rs-rank" style="
+                background:#1f3650; border:2px solid #1f3650; border-radius:11px;
+                box-shadow:0 3px 0 #1f3650; color:#fff; font-weight:900;
+                text-align:center; margin-top:8px;
+              "></div>
+              <canvas class="rs-char" style="margin-top:4px;"></canvas>
+              <div class="rs-name-row" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                <div class="rs-chip" style="border-radius:50%;border:1.5px solid #1f3650;"></div>
+                <div class="rs-name" style="font-weight:900;color:#1f3650;white-space:nowrap;"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -515,6 +534,7 @@
     let raceRunning = false;
     let raceFinished = false;
     let focusRank = 1;
+    let focusRank2 = 0; // 0이면 미지정
     let cameraX = 0;
     let worldScale = ZOOM_DEFAULT;
     let lastFrameTime = 0;
@@ -531,6 +551,7 @@
     let resultBannerTarget = 0;
     let resultTriggered = false;
     let resultMammoth = null;
+    let resultMammoths = []; // 1~2마리
 
     let flashAlpha = 0;
 
@@ -1232,20 +1253,24 @@
         const phase = raceRunning && !countdownActive ? (now - raceStartTime - COUNTDOWN_DURATION) / 1000 + m.index * 0.5 : 0;
         drawMammoth(sx, ly, m, scale, phase);
 
-        // 타겟 매머드 인디케이터
-        const targetM = getCameraTargetMammoth();
-        if (m === targetM && !resultTriggered && raceRunning && !countdownActive) {
-          const indY = ly - SPRITE_BASE_H * scale * 0.56;
-          const bob = Math.sin(now / 350) * 3;
-          ctx.fillStyle = m.color;
-          ctx.strokeStyle = '#1f3650';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(sx, indY + bob + 6);
-          ctx.lineTo(sx - 6, indY + bob - 4);
-          ctx.lineTo(sx + 6, indY + bob - 4);
-          ctx.closePath();
-          ctx.fill(); ctx.stroke();
+        // 타겟 매머드 인디케이터 (focusRank + focusRank2)
+        if (!resultTriggered && raceRunning && !countdownActive) {
+          const ranking = getCurrentRanking();
+          const target1 = ranking[Math.min(focusRank - 1, ranking.length - 1)]?.m;
+          const target2 = focusRank2 > 0 ? ranking[Math.min(focusRank2 - 1, ranking.length - 1)]?.m : null;
+          if (m === target1 || m === target2) {
+            const indY = ly - SPRITE_BASE_H * scale * 0.56;
+            const bob = Math.sin(now / 350) * 3;
+            ctx.fillStyle = m.color;
+            ctx.strokeStyle = '#1f3650';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(sx, indY + bob + 6);
+            ctx.lineTo(sx - 6, indY + bob - 4);
+            ctx.lineTo(sx + 6, indY + bob - 4);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+          }
         }
 
         // 더스트 FX는 drawDust에서 매머드별로 직접 처리
@@ -1369,7 +1394,7 @@
       }
       ranking.forEach(({ rank, m }, i) => {
         const isFinished = finishOrder.includes(m);
-        const isFocus = rank === focusRank;
+        const isFocus = rank === focusRank || (focusRank2 > 0 && rank === focusRank2);
         const row = rankRows.children[i];
         row.style.background = isFocus ? 'rgba(90,181,240,0.22)' : 'transparent';
         const [sNum, chip, sName, sDist] = row.children;
@@ -1497,7 +1522,7 @@
       mammoths = []; finishOrder = [];
       confettiParticles = []; confettiActive = false;
       resultBannerAlpha = 0; resultBannerTarget = 0;
-      resultTriggered = false; resultMammoth = null;
+      resultTriggered = false; resultMammoth = null; resultMammoths = [];
       resultBannerEl.style.display = 'none';
       resultDimEl.style.display = 'none';
       document.getElementById('confettiCanvas').style.display = 'none';
@@ -1533,7 +1558,7 @@
 
       raceStartTime = performance.now();
       raceRunning = true; raceFinished = false;
-      resultTriggered = false; resultMammoth = null;
+      resultTriggered = false; resultMammoth = null; resultMammoths = [];
       cameraX = 0;
       worldScale = ZOOM_DEFAULT;
       lastFrameTime = raceStartTime;
@@ -1693,10 +1718,14 @@
         m.x += (m.velocity * dt) / 1000;
         if (m.x >= TRACK_LENGTH && !m.finished) {
           m.finished = true; finishOrder.push(m);
-          // focusRank 등수 통과 시 플래시 + 컨페티 + 결과 트리거
-          if (!resultTriggered && finishOrder.length >= focusRank) {
+          // 타겟 등수 통과 시 플래시 + 컨페티 + 결과 트리거
+          const rank1Done = finishOrder.length >= focusRank;
+          const rank2Done = !focusRank2 || finishOrder.length >= focusRank2;
+          if (!resultTriggered && rank1Done && rank2Done) {
             resultTriggered = true;
-            resultMammoth = finishOrder[focusRank - 1];
+            resultMammoths = [finishOrder[focusRank - 1]];
+            if (focusRank2 > 0) resultMammoths.push(finishOrder[focusRank2 - 1]);
+            resultMammoth = resultMammoths[0]; // 호환용
             resultBannerTarget = 1;
             flashAlpha = 0.6;
             spawnConfetti();
@@ -1724,15 +1753,27 @@
     function getCameraTargetMammoth() {
       if (!mammoths.length) return null;
       const ranking = getCurrentRanking();
-      const idx = Math.min(focusRank - 1, ranking.length - 1);
-      return ranking[idx].m;
+      if (focusRank2 <= 0) {
+        // 단일 타겟
+        const idx = Math.min(focusRank - 1, ranking.length - 1);
+        return ranking[idx].m;
+      }
+      // 2명 모드: 높은 순위(작은 숫자) 우선, 완주하면 낮은 순위로 전환
+      const highRank = Math.min(focusRank, focusRank2);
+      const lowRank = Math.max(focusRank, focusRank2);
+      const highM = ranking[Math.min(highRank - 1, ranking.length - 1)].m;
+      const lowM = ranking[Math.min(lowRank - 1, ranking.length - 1)].m;
+      if (!highM.finished) return highM;
+      if (!lowM.finished) return lowM;
+      return lowM; // 둘 다 완주 → 마지막 타겟
     }
 
     // ===== 결과 배너 — 전체 DOM =====
     function drawResultBanner() {
-      if (resultBannerAlpha <= 0 || !resultMammoth) return;
+      if (resultBannerAlpha <= 0 || !resultMammoths.length) return;
 
-      const bw = Math.min(W * 0.85, 340);
+      const dual = resultMammoths.length > 1;
+      const bw = Math.min(W * 0.85, dual ? 400 : 340);
       const bh = Math.min(H * 0.65, 360);
 
       const dimEl = resultDimEl;
@@ -1756,42 +1797,73 @@
       titleBadge.style.lineHeight = '28px';
       titleBadge.style.fontSize = Math.min(bw * 0.055, 15) + 'px';
 
-      // 등수 배지
-      const rankLabel = ['1ST', '2ND', '3RD'][focusRank - 1] || `${focusRank}TH`;
-      const rankBadge = resultRankBadgeEl;
-      rankBadge.textContent = rankLabel;
-      rankBadge.style.width = '56px';
-      rankBadge.style.height = '22px';
-      rankBadge.style.lineHeight = '22px';
-      rankBadge.style.fontSize = '12px';
+      // 슬롯 렌더링
+      const slots = document.querySelectorAll('.result-slot');
+      const ranks = [focusRank];
+      if (focusRank2 > 0) ranks.push(focusRank2);
+      ranks.sort((a, b) => a - b);
 
-      // 캐릭터 이미지 — 작은 캔버스에 그려서 DOM에 표시
-      const charCanvas = resultCharCanvasEl;
-      const mmtImg = getResultMmt(resultMammoth.color);
-      const imgSize = Math.round(bh * 0.65);
       const dpr = window.devicePixelRatio || 1;
-      charCanvas.width = imgSize * dpr;
-      charCanvas.height = imgSize * dpr;
-      charCanvas.style.width = imgSize + 'px';
-      charCanvas.style.height = imgSize + 'px';
-      if (mmtImg) {
-        const cctx = charCanvas.getContext('2d');
-        cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        cctx.clearRect(0, 0, imgSize, imgSize);
-        cctx.drawImage(mmtImg, 0, 0, imgSize, imgSize);
-      }
-
-      // 컬러칩
+      const imgSize = Math.round(bh * (dual ? 0.65 : 0.65));
       const chipSize = Math.round(Math.min(bw * 0.1, 30) * 0.6);
-      const colorChip = resultColorChipEl;
-      colorChip.style.width = chipSize + 'px';
-      colorChip.style.height = chipSize + 'px';
-      colorChip.style.background = resultMammoth.color;
+      const nameFs = Math.min(bw * (dual ? 0.07 : 0.1), dual ? 20 : 30);
 
-      // 이름
-      const nameEl = resultNameTextEl;
-      nameEl.textContent = resultMammoth.name;
-      nameEl.style.fontSize = Math.min(bw * 0.1, 30) + 'px';
+      resultMammoths.forEach((m, i) => {
+        const slot = slots[i];
+        slot.style.display = 'flex';
+        slot.style.flexDirection = 'column';
+        slot.style.alignItems = 'center';
+
+        // 등수 배지
+        const rankIdx = ranks[i] - 1;
+        const rankLabel = ['1ST', '2ND', '3RD'][rankIdx] || `${ranks[i]}TH`;
+        const rb = slot.querySelector('.rs-rank');
+        rb.textContent = rankLabel;
+        rb.style.width = '56px';
+        rb.style.height = '22px';
+        rb.style.lineHeight = '22px';
+        rb.style.fontSize = '12px';
+        rb.style.alignSelf = 'center';
+
+        // 캐릭터 (원본 여백 크롭)
+        const cc = slot.querySelector('.rs-char');
+        cc.style.display = 'block';
+        cc.style.margin = '0 auto';
+        const cropL = 0.12, cropR = 0.12, cropT = 0.02, cropB = 0.06;
+        const cropW = imgSize * (1 - cropL - cropR);
+        const cropH = imgSize * (1 - cropT - cropB);
+        cc.width = Math.round(cropW * dpr);
+        cc.height = Math.round(cropH * dpr);
+        cc.style.width = Math.round(cropW) + 'px';
+        cc.style.height = Math.round(cropH) + 'px';
+        const mmtImg = getResultMmt(m.color);
+        if (mmtImg) {
+          const sw = mmtImg.width || mmtImg.naturalWidth;
+          const sh = mmtImg.height || mmtImg.naturalHeight;
+          const cctx = cc.getContext('2d');
+          cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          cctx.clearRect(0, 0, cropW, cropH);
+          // 2명일 때 두 번째 슬롯은 좌우반전 (마주보는 구도)
+          if (dual && i === 1) {
+            cctx.translate(cropW, 0);
+            cctx.scale(-1, 1);
+          }
+          cctx.drawImage(mmtImg, sw * cropL, sh * cropT, sw * (1 - cropL - cropR), sh * (1 - cropT - cropB), 0, 0, cropW, cropH);
+        }
+
+        // 칩 + 이름
+        const chip = slot.querySelector('.rs-chip');
+        chip.style.width = chipSize + 'px';
+        chip.style.height = chipSize + 'px';
+        chip.style.background = m.color;
+
+        const name = slot.querySelector('.rs-name');
+        name.textContent = m.name;
+        name.style.fontSize = nameFs + 'px';
+      });
+
+      // 2번째 슬롯 숨기기 (1명일 때)
+      if (!dual) slots[1].style.display = 'none';
     }
 
 
@@ -1852,10 +1924,6 @@
     const resultBannerEl = document.getElementById('resultBannerDom');
     const resultCardEl = document.getElementById('resultCard');
     const resultTitleBadgeEl = document.getElementById('resultTitleBadge');
-    const resultRankBadgeEl = document.getElementById('resultRankBadge');
-    const resultCharCanvasEl = document.getElementById('resultCharCanvas');
-    const resultColorChipEl = document.getElementById('resultColorChip');
-    const resultNameTextEl = document.getElementById('resultNameText');
     const resultDimEl = document.getElementById('resultDimOverlay');
 
     const MAX_MAMMOTHS = 12;
@@ -2033,20 +2101,50 @@
       return data;
     }
 
+    const focusRankSelect2 = document.getElementById('focusRankSelect2');
+
     function setCameraOptions(count) {
-      const cur = parseInt(focusRankSelect.value, 10) || 1;
+      const cur1 = parseInt(focusRankSelect.value, 10) || 1;
+      const cur2 = parseInt(focusRankSelect2.value, 10) || 0;
+
       focusRankSelect.innerHTML = '';
+      focusRankSelect2.innerHTML = '<option value="0">없음</option>';
+
       for (let i = 1; i <= count; i++) {
-        const o = document.createElement('option');
-        o.value = String(i); o.textContent = `${i}등`;
-        focusRankSelect.appendChild(o);
+        const o1 = document.createElement('option');
+        o1.value = String(i); o1.textContent = `${i}등`;
+        focusRankSelect.appendChild(o1);
+
+        const o2 = document.createElement('option');
+        o2.value = String(i); o2.textContent = `${i}등`;
+        focusRankSelect2.appendChild(o2);
       }
-      focusRankSelect.value = String(Math.max(1, Math.min(count, cur)));
+
+      focusRankSelect.value = String(Math.max(1, Math.min(count, cur1)));
+      focusRankSelect2.value = String(Math.max(0, Math.min(count, cur2)));
       focusRank = parseInt(focusRankSelect.value, 10);
+      focusRank2 = parseInt(focusRankSelect2.value, 10) || 0;
+      updateRankSelectDisabled();
+    }
+
+    function updateRankSelectDisabled() {
+      const v1 = parseInt(focusRankSelect.value, 10);
+      const v2 = parseInt(focusRankSelect2.value, 10);
+      for (const opt of focusRankSelect.options) {
+        opt.disabled = (v2 > 0 && parseInt(opt.value) === v2);
+      }
+      for (const opt of focusRankSelect2.options) {
+        opt.disabled = (parseInt(opt.value) === v1 && opt.value !== '0');
+      }
     }
 
     focusRankSelect.addEventListener('change', () => {
       focusRank = parseInt(focusRankSelect.value, 10) || 1;
+      updateRankSelectDisabled();
+    });
+    focusRankSelect2.addEventListener('change', () => {
+      focusRank2 = parseInt(focusRankSelect2.value, 10) || 0;
+      updateRankSelectDisabled();
     });
 
     addMammothBtn.addEventListener('click', () => addMammoth());
