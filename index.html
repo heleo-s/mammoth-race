@@ -1285,10 +1285,17 @@
       ctx.fillStyle = '#f06060';
       ctx.fillRect(tx + tiw - 2, ty - 7, 3, 14);
 
-      // 카메라 뷰 범위 (줌 반영)
-      const viewW = W / (BASE_WORLD_SCALE * worldScale);
-      const cs = Math.max(0, cameraX / TRACK_LENGTH);
-      const ce = Math.min(1, (cameraX + viewW) / TRACK_LENGTH);
+      // 카메라 뷰 범위 (줌 + 앵커 반영)
+      // screenX → worldX 역변환: zoom 중심 W*0.30, worldToScreenX 앵커 W*0.35
+      const zoomAnchor = W * 0.30;
+      function screenToWorld(screenX) {
+        const unzoomed = zoomAnchor + (screenX - zoomAnchor) / worldScale;
+        return (unzoomed - W * 0.35) / BASE_WORLD_SCALE + cameraX;
+      }
+      const worldLeft = screenToWorld(0);
+      const worldRight = screenToWorld(W);
+      const cs = Math.max(0, worldLeft / TRACK_LENGTH);
+      const ce = Math.min(1, worldRight / TRACK_LENGTH);
       const cx1 = tx + tiw * cs, cx2 = tx + tiw * ce;
       ctx.fillStyle = 'rgba(90,181,240,0.18)';
       ctx.fillRect(cx1, ty - 7, cx2 - cx1, 14);
@@ -1710,7 +1717,11 @@
 
     // ===== 결과 배너 — 오늘의 매머드 =====
     function drawResultBanner() {
-      if (resultBannerAlpha <= 0 || !resultMammoth) return;
+      if (resultBannerAlpha <= 0 || !resultMammoth) {
+        return;
+      }
+      // 결과창이 뜰 때 순위표 DOM 숨기기
+      document.getElementById('rankingOverlay').style.display = 'none';
 
       ctx.globalAlpha = resultBannerAlpha;
 
