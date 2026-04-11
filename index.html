@@ -659,9 +659,22 @@
     ];
     // 4행은 균일 간격으로 충분
 
-    const BURST_FX_COLS = 6;
-    const BURST_FX_ROWS = 2;
-    const BURST_FX_TOTAL = 12;
+    const BURST_FX_TOTAL = 11;
+    // 급가속 FX 수동 좌표 [x, y, w, h] — sprint_sprites.json 기준
+    // 순서: sprite18→13→7→5→3→2→29→30→32→39→46
+    const BURST_FRAMES = [
+      [46,  533, 96,  35],  // 1 (sprite18)
+      [179, 503, 104, 66],  // 2 (sprite13)
+      [315, 475, 123, 96],  // 3 (sprite7)
+      [459, 466, 130, 104], // 4 (sprite5)
+      [601, 456, 130, 115], // 5 (sprite3)
+      [734, 450, 140, 118], // 6 (sprite2)
+      [33,  633, 119, 98],  // 7 (sprite29)
+      [169, 641, 128, 87],  // 8 (sprite30)
+      [306, 655, 123, 71],  // 9 (sprite32)
+      [458, 669, 115, 57],  // 10 (sprite39)
+      [613, 698, 82,  28],  // 11 (sprite46)
+    ];
 
     function spawnDust() {} // 호환용 빈 함수
     function updateDust(dt) {
@@ -676,7 +689,7 @@
           m.burstFrame = 0;
         }
         if (m.burstFrame >= 0) {
-          m.burstFrame += 18 * dt / 1000;
+          m.burstFrame += 11 * dt / 1000;
           if (m.burstFrame >= BURST_FX_TOTAL) m.burstFrame = -1;
         }
       }
@@ -740,23 +753,22 @@
         if (m.burstFrame >= 0 && burstImg && burstImg.naturalWidth) {
           const fi = Math.floor(m.burstFrame);
           if (fi < BURST_FX_TOTAL) {
-            const fw = burstImg.naturalWidth / BURST_FX_COLS;
-            const fh = burstImg.naturalHeight / BURST_FX_ROWS;
-            const col = fi % BURST_FX_COLS;
-            const row = Math.floor(fi / BURST_FX_COLS);
+            const [bx, by, bw, bh] = BURST_FRAMES[fi];
             const needFlip = fi >= 1 && fi <= 5;
-            const drawSize = 36 * scale;
+            // 가장 큰 프레임(140×118) 기준으로 통일 스케일
+            const unitScale = (36 * scale) / 118;
+            const drawW = bw * unitScale;
+            const drawH = bh * unitScale;
 
             ctx.save();
             const dispW3 = dispH * 1.2;
-            ctx.translate(sx - dispW3 * 0.35 + 12 * scale, ly + dispH * 0.29 - 6 * scale);
+            ctx.translate(sx - dispW3 * 0.35 + -36 * scale, ly + dispH * 0.29 - 1 * scale);
             if (needFlip) {
-              ctx.scale(1, 1); // 원본이 왼쪽향이라 반전하면 오른쪽(뒤쪽)
-            } else {
               ctx.scale(-1, 1);
             }
-            ctx.drawImage(burstImg, col * fw, row * fh, fw, fh,
-              0, -drawSize * 0.5, drawSize, drawSize);
+            // 우측 정렬: 이미지 오른쪽 끝이 기준점에 닿도록
+            ctx.drawImage(burstImg, bx, by, bw, bh,
+              -drawW, -drawH, drawW, drawH);
             ctx.restore();
           }
         }

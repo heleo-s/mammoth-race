@@ -32,7 +32,7 @@
 
   <h3>급가속 FX (dust_fx_reference_alpha.png)</h3>
   <div class="controls">
-    <label>FPS: <input type="range" id="burstFps" min="1" max="30" value="18"> <span id="burstFpsVal">18</span></label>
+    <label>FPS: <input type="range" id="burstFps" min="1" max="30" value="11"> <span id="burstFpsVal">11</span></label>
     <label>크기: <input type="range" id="burstSize" min="20" max="200" value="80"> <span id="burstSizeVal">80</span></label>
     <label><input type="checkbox" id="burstFlipAuto" checked> 2~6번 자동반전</label>
   </div>
@@ -57,7 +57,20 @@
   const SPRITE_COLS = 4, SPRITE_ROWS = 2;
   const mammothImg = new Image();
   mammothImg.src = ASSET_BASE + 'running_mammoth_sprite_sheet.png';
-  const BURST_COLS = 6, BURST_ROWS = 2, BURST_TOTAL = 12;
+  const BURST_TOTAL = 11;
+  const BURST_FRAMES = [
+    [46,  533, 96,  35],
+    [179, 503, 104, 66],
+    [315, 475, 123, 96],
+    [459, 466, 130, 104],
+    [601, 456, 130, 115],
+    [734, 450, 140, 118],
+    [33,  633, 119, 98],
+    [169, 641, 128, 87],
+    [306, 655, 123, 71],
+    [458, 669, 115, 57],
+    [613, 698, 82,  28],
+  ];
 
   // --- 일반 FX ---
   const fxCanvas = document.getElementById('fxCanvas');
@@ -145,11 +158,8 @@
 
     if (!burstImg.naturalWidth) { requestAnimationFrame(drawBurst); return; }
 
-    const fw = burstImg.naturalWidth / BURST_COLS;
-    const fh = burstImg.naturalHeight / BURST_ROWS;
     const fi = Math.floor(burstFrame) % BURST_TOTAL;
-    const col = fi % BURST_COLS;
-    const row = Math.floor(fi / BURST_COLS);
+    const [bx, by, bw, bh] = BURST_FRAMES[fi];
     const needFlip = autoFlip && fi >= 1 && fi <= 5;
 
     burstCtx.fillStyle = '#aaa';
@@ -159,12 +169,17 @@
 
     const cx = burstCanvas.width / 2;
     const cy = burstCanvas.height / 2;
+    // 가장 큰 프레임(140×118) 기준 통일 스케일
+    const unitScale = size / 118;
+    const drawW = bw * unitScale;
+    const drawH = bh * unitScale;
 
     burstCtx.save();
     burstCtx.translate(cx, cy);
     if (needFlip) burstCtx.scale(-1, 1);
-    burstCtx.drawImage(burstImg, col * fw, row * fh, fw, fh,
-      -size / 2, -size / 2, size, size);
+    // 우측+하단 정렬
+    burstCtx.drawImage(burstImg, bx, by, bw, bh,
+      -drawW, -drawH, drawW, drawH);
     burstCtx.restore();
 
     burstFrame += fps / 60;
@@ -213,33 +228,31 @@
       }
     }
 
-    // 급가속 FX
+    // 급가속 FX — 수동 좌표
     if (burstImg.naturalWidth) {
-      const fw = burstImg.naturalWidth / BURST_COLS;
-      const fh = burstImg.naturalHeight / BURST_ROWS;
-      const tileSize = 55;
+      const tileH = 55;
 
       frCtx.fillStyle = '#ccc';
       frCtx.fillText('burst FX (1~12):', 10, 210);
       for (let i = 0; i < BURST_TOTAL; i++) {
-        const col = i % BURST_COLS;
-        const row = Math.floor(i / BURST_COLS);
-        const x = 10 + i * (tileSize + 8);
+        const [bx, by, bw, bh] = BURST_FRAMES[i];
+        const tileW = tileH * (bw / bh);
+        const x = 10 + i * (tileH + 8);
         const y = 217;
 
         frCtx.save();
         const needFlip = i >= 1 && i <= 5;
         if (needFlip) {
-          frCtx.translate(x + tileSize, y);
+          frCtx.translate(x + tileW, y);
           frCtx.scale(-1, 1);
-          frCtx.drawImage(burstImg, col * fw, row * fh, fw, fh, 0, 0, tileSize, tileSize);
+          frCtx.drawImage(burstImg, bx, by, bw, bh, 0, 0, tileW, tileH);
         } else {
-          frCtx.drawImage(burstImg, col * fw, row * fh, fw, fh, x, y, tileSize, tileSize);
+          frCtx.drawImage(burstImg, bx, by, bw, bh, x, y, tileW, tileH);
         }
         frCtx.restore();
 
         frCtx.fillStyle = needFlip ? '#f06060' : '#888';
-        frCtx.fillText(`${i + 1}${needFlip ? 'F' : ''}`, x + tileSize / 2 - 6, y + tileSize + 14);
+        frCtx.fillText(`${i + 1}${needFlip ? 'F' : ''}`, x + tileW / 2 - 6, y + tileH + 14);
         frCtx.fillStyle = '#ccc';
       }
     }
