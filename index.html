@@ -463,9 +463,9 @@
     const TRACK_BOTTOM_N = 0.88;
     const TRACK_HEIGHT_N = 0.23;
     const BASE_WORLD_SCALE = 0.78; // worldToScreenX 고정 스케일
-    const ZOOM_DEFAULT = 1.0;      // 줌 팩터 기본값
+    const ZOOM_DEFAULT = 1.4;      // 줌 팩터 기본값
     const ZOOM_MIN = 1.20;         // 최대 줌아웃
-    const ZOOM_MAX = 1.80;         // 최대 줌인
+    const ZOOM_MAX = 1.60;         // 최대 줌인
     const MAMMOTH_SCALE_MULT = 1.28;
     const CAMERA_RETARGET_SPEED = 3400;
     const COUNTDOWN_DURATION = 3000;
@@ -877,25 +877,13 @@
 
       }
 
-      // Start line
+      // Start line — 결승선과 동일 위치/길이, 네이비 실선
       const ssx = worldToScreenX(0);
       if (ssx > -30 && ssx < W + 30) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-        ctx.lineWidth = 2.5;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath(); ctx.moveTo(ssx, tTop); ctx.lineTo(ssx, tBot); ctx.stroke();
-        ctx.setLineDash([]);
-
-        ctx.font = 'bold 9px system-ui';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        const slw = ctx.measureText('START').width + 8;
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.beginPath();
-        ctx.roundRect(ssx - slw / 2, tTop - 16, slw, 13, 3);
-        ctx.fill();
-        ctx.fillStyle = 'rgba(70,55,30,0.8)';
-        ctx.fillText('START', ssx, tTop - 5);
+        const startTop = tTop + trackH * 0.15;
+        ctx.strokeStyle = '#1f3650';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(ssx, startTop); ctx.lineTo(ssx, H); ctx.stroke();
       }
     }
 
@@ -1348,7 +1336,7 @@
         mammoths.push({
           name: names[oi].trim() || `매머드 ${oi + 1}`,
           color: (colors && colors[oi]) ? colors[oi] : MAMMOTH_COLORS[oi % MAMMOTH_COLORS.length],
-          laneIndex: i % lc, x: 0, velocity: BASE_SPEED,
+          laneIndex: i % lc, x: -40, velocity: BASE_SPEED,
           z: Math.max(0.04, Math.min(0.96, 0.5 + (i % 2 === 1 ? -1 : 1) * Math.ceil(i / 2) * Math.max(0.07, Math.min(0.15, 0.7 / n)))),
           zTarget: Math.max(0.04, Math.min(0.96, 0.5 + (i % 2 === 1 ? -1 : 1) * Math.ceil(i / 2) * Math.max(0.07, Math.min(0.15, 0.7 / n)))),
           zVel: 0,
