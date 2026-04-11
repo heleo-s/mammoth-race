@@ -1388,7 +1388,7 @@
       // 행 확보
       while (rankRows.children.length < ranking.length) {
         const row = document.createElement('div');
-        row.style.cssText = `display:flex;align-items:center;padding:0 6px;box-sizing:border-box;width:100%;max-width:100%;height:${rowH}px;font-weight:900;font-size:${Math.round(11*rankScale)}px;border-radius:${Math.round(5*rankScale)}px;overflow:hidden;`;
+        row.style.cssText = `display:flex;align-items:center;padding:0 6px;box-sizing:border-box;width:100%;height:${rowH}px;font-weight:900;font-size:${Math.round(11*rankScale)}px;white-space:nowrap;border-radius:10px;overflow:hidden;`;
         const chip = document.createElement('div');
         chip.style.cssText = `width:${Math.round(8*rankScale)}px;height:${Math.round(8*rankScale)}px;border-radius:50%;border:1px solid #1f3650;flex-shrink:0;margin-left:${Math.round(5*rankScale)}px;`;
         const sNum = document.createElement('span');
