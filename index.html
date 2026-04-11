@@ -533,7 +533,7 @@
     let flashAlpha = 0;
 
     function toMeters(x) {
-      return Math.round((x / TRACK_LENGTH) * DISPLAY_METERS);
+      return Math.max(0, Math.round((x / TRACK_LENGTH) * DISPLAY_METERS));
     }
 
     const MAMMOTH_COLORS = [
@@ -558,7 +558,7 @@
       'city-far', 'city-near', 'river',
       'grass', 'track', 'trees', 'clouds', 'shrubs'
     ];
-    const PNG_ASSET_NAMES = ['running_mammoth_sprite_sheet', 'snowy_track'];
+    const PNG_ASSET_NAMES = ['running_mammoth_sprite_sheet', 'snowy_track', 'result_mmt'];
     const assets = {};
     let assetsLoaded = false;
 
@@ -1025,6 +1025,40 @@
       return oc;
     }
 
+    // ===== 결과 캐릭터 (크로마키 + 틴팅) =====
+    const resultMmtCache = {};
+    function getResultMmt(color) {
+      if (resultMmtCache[color]) return resultMmtCache[color];
+      const src = assets['result_mmt'];
+      if (!src || !src.naturalWidth) return null;
+
+      const oc = document.createElement('canvas');
+      oc.width = src.naturalWidth;
+      oc.height = src.naturalHeight;
+      const octx = oc.getContext('2d', { willReadFrequently: true });
+      octx.drawImage(src, 0, 0);
+
+      const imgData = octx.getImageData(0, 0, oc.width, oc.height);
+      const d = imgData.data;
+      const [tr, tg, tb] = hexToRgb(color);
+      const [th, ts, tl] = rgbToHsl(tr, tg, tb);
+
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 20) continue;
+        const [h, s, l] = rgbToHsl(d[i], d[i + 1], d[i + 2]);
+        // 파란 옷 영역 틴팅
+        if (h >= 195 && h <= 265 && s > 0.28 && l > 0.14 && l < 0.82) {
+          const lFactor = ts < 0.08 ? 0.4 : 0.7;
+          const newL = Math.max(0, Math.min(1, tl + (l - 0.45) * lFactor));
+          const [nr, ng, nb] = hslToRgb(th, ts, newL);
+          d[i] = nr; d[i + 1] = ng; d[i + 2] = nb;
+        }
+      }
+      octx.putImageData(imgData, 0, 0);
+      resultMmtCache[color] = oc;
+      return oc;
+    }
+
     // ===== 매머드 + 인디케이터 =====
     function drawMammothsAndIndicators(now) {
       const offL = [], offR = [];
@@ -1384,10 +1418,12 @@
           const others = mammoths.filter(m => m !== focusCam);
           if (others.length > 0) {
             const nearestDist = Math.min(...others.map(m => Math.abs(m.x - focusCam.x)));
-            const fitScale = (W * 0.40) / Math.max(nearestDist * BASE_WORLD_SCALE, 1);
+            // 가까울수록 줌아웃(경쟁 상황 넓게), 멀수록 줌인(혼자 치고 나감)
+            const normDist = Math.min(nearestDist * BASE_WORLD_SCALE / (W * 0.3), 1);
+            const fitScale = ZOOM_MIN + normDist * (ZOOM_MAX - ZOOM_MIN);
             targetScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, fitScale));
           } else {
-            targetScale = ZOOM_DEFAULT;
+            targetScale = ZOOM_MAX;
           }
         } else {
           targetScale = ZOOM_DEFAULT;
@@ -1556,8 +1592,8 @@
       ctx.fillStyle = 'rgba(15,30,55,0.45)';
       ctx.fillRect(0, 0, W, H);
 
-      const bw = Math.min(W * 0.82, 300);
-      const bh = Math.min(H * 0.38, 200);
+      const bw = Math.min(W * 0.85, 340);
+      const bh = Math.min(H * 0.65, 360);
       const bx = (W - bw) / 2;
       const by = (H - bh) / 2;
       const br = 20;
@@ -1602,13 +1638,15 @@
       rankEl.style.top = (by + 58 + badgeH / 2 - 7) + 'px';
       rankEl.style.left = cx + 'px';
 
-      // 색상 원
-      const circleY = by + bh * 0.58;
-      ctx.fillStyle = resultMammoth.color;
-      ctx.beginPath(); ctx.arc(cx, circleY, bw * 0.1, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#1f3650'; ctx.lineWidth = 3; ctx.stroke();
+      // 캐릭터 이미지 (크로마키 + 틴팅)
+      const mmtImg = getResultMmt(resultMammoth.color);
+      if (mmtImg) {
+        const imgSize = bh * 0.75;
+        const imgY = by + bh * 0.18;
+        ctx.drawImage(mmtImg, cx - imgSize / 2, imgY, imgSize, imgSize);
+      }
 
-      // 이름 — DOM 폰트로 렌더링
+      // 이름 + 컬러칩 — DOM 폰트로 렌더링
       const nameFs = Math.min(bw * 0.1, 30);
       const nameEl = document.getElementById('resultNameText');
       const overlayEl = document.getElementById('resultNameOverlay');
@@ -1616,7 +1654,17 @@
       overlayEl.style.opacity = resultBannerAlpha;
       nameEl.textContent = resultMammoth.name;
       nameEl.style.fontSize = nameFs + 'px';
-      nameEl.style.top = (by + bh * 0.82 - nameFs * 0.55) + 'px';
+      nameEl.style.top = (by + bh * 0.88 - nameFs * 0.55) + 'px';
+
+      // 이름 왼쪽 작은 컬러칩
+      const chipR = nameFs * 0.3;
+      const chipY = by + bh * 0.88;
+      ctx.font = `900 ${nameFs}px ${UI_FONT}`;
+      ctx.textAlign = 'center';
+      const nameW = ctx.measureText(resultMammoth.name).width;
+      ctx.fillStyle = resultMammoth.color;
+      ctx.beginPath(); ctx.arc(cx - nameW / 2 - chipR * 2, chipY, chipR, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#1f3650'; ctx.lineWidth = 1.5; ctx.stroke();
 
       ctx.globalAlpha = 1;
     }
