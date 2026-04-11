@@ -1353,7 +1353,15 @@
       const rankPanel = rankPanelEl;
       const rankCard = rankCardEl;
       const rankRows = rankRowsEl;
+      if (countdownActive) { rankPanel.style.display = 'none'; return; }
       rankPanel.style.display = 'block';
+      // 카운트다운 직후 디졸브 인
+      if (!rankPanel._shown) {
+        rankPanel._shown = true;
+        rankPanel.style.opacity = '0';
+        rankPanel.style.transition = 'opacity 0.5s';
+        setTimeout(() => { rankPanel.style.opacity = '1'; }, 10);
+      }
       rankPanel.style.left = x + 'px';
       rankPanel.style.top = rankY + 'px';
       rankCard.style.width = rankW + 'px';
@@ -1508,6 +1516,9 @@
       resultBannerEl.style.display = 'none';
       resultDimEl.style.display = 'none';
       rankPanelEl.style.display = 'none';
+      rankPanelEl._shown = false;
+      rankPanelEl.style.transition = '';
+      rankPanelEl.style.opacity = '';
       flashAlpha = 0;
       const lc = Math.min(LANE_COUNT, n);
       // 출발 순서 랜덤 셔플
