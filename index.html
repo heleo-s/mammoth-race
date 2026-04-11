@@ -558,7 +558,7 @@
       'city-far', 'city-near', 'river',
       'grass', 'track', 'trees', 'clouds', 'shrubs'
     ];
-    const PNG_ASSET_NAMES = ['running_mammoth_sprite_sheet', 'snowy_track', 'result_mmt'];
+    const PNG_ASSET_NAMES = ['running_mammoth_sprite_sheet', 'snowy_track', 'result_mmt', 'fx_sheet_alpha', 'dust_fx_reference_alpha'];
     const assets = {};
     let assetsLoaded = false;
 
@@ -647,35 +647,93 @@
     }
 
     // ===== Dust =====
-    function spawnDust(wx, wy, color) {
-      if (dustParticles.length > 200) return;
-      for (let i = 0; i < 2; i++) {
-        dustParticles.push({
-          x: wx - 8 - Math.random() * 6, y: wy + Math.random() * 4 - 2,
-          vx: -(Math.random() * 1.2 + 0.4), vy: -(Math.random() * 1),
-          life: 1, decay: 0.025 + Math.random() * 0.02,
-          r: Math.random() * 3.5 + 1.5, color
-        });
-      }
-    }
-    function updateDust() {
-      for (let i = dustParticles.length - 1; i >= 0; i--) {
-        const d = dustParticles[i];
-        d.x += d.vx; d.y += d.vy; d.vy += 0.04; d.life -= d.decay;
-        if (d.life <= 0) dustParticles.splice(i, 1);
+    // ===== 더스트 FX (스프라이트 시트 기반) =====
+    // fx_sheet_alpha: 6열 × 4행, 3행=보통속도, 4행=느린속도
+    // dust_fx_reference_alpha: 2행 × 6열 (12프레임), 2~6번 좌우반전
+    const FX_COLS = 6;
+    const FX_ROWS = 4;
+    const FX_TITLE_RATIO = 0.12; // 상단 타이틀 영역 비율
+    const BURST_FX_COLS = 6;
+    const BURST_FX_ROWS = 2;
+    const BURST_FX_TOTAL = 12;
+
+    function spawnDust() {} // 호환용 빈 함수
+    function updateDust(dt) {
+      for (const m of mammoths) {
+        if (m.finished || !raceRunning || racePaused || countdownActive) continue;
+        const fps = 8;
+        m.dustFrame = (m.dustFrame + fps * dt / 1000) % FX_COLS;
+
+        if (m.burstTimer > 0 && m.burstFrame < 0) {
+          m.burstFrame = 0;
+        }
+        if (m.burstFrame >= 0) {
+          m.burstFrame += 18 * dt / 1000;
+          if (m.burstFrame >= BURST_FX_TOTAL) m.burstFrame = -1;
+        }
       }
     }
     function drawDust() {
-      for (const d of dustParticles) {
-        const sx = worldToScreenX(d.x);
-        if (sx < -15 || sx > W + 15) continue;
-        ctx.globalAlpha = d.life * 0.4;
-        ctx.fillStyle = d.color;
-        ctx.beginPath();
-        ctx.arc(sx, d.y, d.r * d.life, 0, Math.PI * 2);
-        ctx.fill();
+      const fxImg = assets['fx_sheet_alpha'];
+      const burstImg = assets['dust_fx_reference_alpha'];
+      const { tTop, tBot } = getTrackBounds();
+      const trackH = tBot - tTop;
+      const pad = trackH * 0.08;
+
+      for (const m of mammoths) {
+        if (m.finished || !raceRunning) continue;
+        const sx = worldToScreenX(m.x);
+        if (sx < -60 || sx > W + 60) continue;
+        const ly = tTop + pad + m.z * (trackH - pad * 2);
+        const scale = (0.62 + m.z * 0.18) * MAMMOTH_SCALE_MULT;
+        const dispH = SPRITE_BASE_H * scale;
+
+        // 일반 주행 FX
+        if (fxImg && fxImg.naturalWidth) {
+          const fw = fxImg.naturalWidth / FX_COLS;
+          const titleH = fxImg.naturalHeight * FX_TITLE_RATIO;
+          const fh = (fxImg.naturalHeight - titleH) / FX_ROWS;
+          const fi = Math.floor(m.dustFrame) % FX_COLS;
+          const slow = m.smoothVel < BASE_SPEED * 0.9;
+          const row = slow ? 3 : 2;
+          const srcY = titleH + row * fh;
+          const drawSize = (slow ? 18 : 26) * scale;
+          // 프레임별 x오프셋: 먼지구름 중심이 뒤로 퍼지는 형태에 맞춤
+          const frameOffsets = [0, 0, 0, 0.4, 0.7, 1.0]; // fi 0~5
+          const trailOffset = frameOffsets[fi] * drawSize;
+
+          ctx.save();
+          ctx.translate(sx - dispH * 0.3 - trailOffset, ly + dispH * 0.15);
+          ctx.scale(-1, 1);
+          ctx.drawImage(fxImg, fi * fw, srcY, fw, fh,
+            -drawSize, -drawSize * 0.5, drawSize, drawSize);
+          ctx.restore();
+        }
+
+        // 급가속 FX
+        if (m.burstFrame >= 0 && burstImg && burstImg.naturalWidth) {
+          const fi = Math.floor(m.burstFrame);
+          if (fi < BURST_FX_TOTAL) {
+            const fw = burstImg.naturalWidth / BURST_FX_COLS;
+            const fh = burstImg.naturalHeight / BURST_FX_ROWS;
+            const col = fi % BURST_FX_COLS;
+            const row = Math.floor(fi / BURST_FX_COLS);
+            const needFlip = fi >= 1 && fi <= 5;
+            const drawSize = 36 * scale;
+
+            ctx.save();
+            ctx.translate(sx - dispH * 0.35, ly + dispH * 0.1);
+            if (needFlip) {
+              ctx.scale(1, 1); // 원본이 왼쪽향이라 반전하면 오른쪽(뒤쪽)
+            } else {
+              ctx.scale(-1, 1);
+            }
+            ctx.drawImage(burstImg, col * fw, row * fh, fw, fh,
+              0, -drawSize * 0.5, drawSize, drawSize);
+            ctx.restore();
+          }
+        }
       }
-      ctx.globalAlpha = 1;
     }
 
     // ===== Confetti =====
@@ -1110,7 +1168,7 @@
           ctx.fill(); ctx.stroke();
         }
 
-        if (raceRunning && !m.finished && !racePaused && !countdownActive) spawnDust(m.x, ly, 'rgba(180,160,120,0.3)');
+        // 더스트 FX는 drawDust에서 매머드별로 직접 처리
       }
 
       return { offL, offR };
@@ -1378,7 +1436,8 @@
           colliding: false,
           collideTimer: 0,
           finished: false, index: i,
-          burstTimer: 0, burstAmount: 0, stumbleTimer: 0, smoothVel: BASE_SPEED, animFrame: 0
+          burstTimer: 0, burstAmount: 0, stumbleTimer: 0, smoothVel: BASE_SPEED, animFrame: 0,
+          dustFrame: 0, burstFrame: -1
         });
       }
 
@@ -1746,7 +1805,9 @@
 
     function loop(now) {
       if (!mammoths.length) { render(performance.now()); return; }
-      updateRace(now); updateClouds(); updateDust(); updateConfetti();
+      const loopDt = Math.min(now - (loop._prev || now), 50);
+      loop._prev = now;
+      updateRace(now); updateClouds(); updateDust(loopDt); updateConfetti();
       render(now);
       if (raceRunning || confettiActive || (resultTriggered && resultBannerAlpha < 1)) requestAnimationFrame(loop);
       else render(performance.now());

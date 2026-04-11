@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>FX Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { margin: 0; background: #222; display: flex; flex-direction: column; align-items: center; }
+    canvas { background: #444; margin: 10px; }
+    .controls { display: flex; gap: 10px; padding: 10px; flex-wrap: wrap; justify-content: center; }
+    button { padding: 8px 16px; font-size: 14px; cursor: pointer; border-radius: 8px; border: 2px solid #555; background: #333; color: #fff; }
+    button.active { background: #5ab5f0; border-color: #2a7bbf; }
+    label { color: #fff; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+    input[type=range] { width: 120px; }
+    h3 { color: #fff; margin: 10px 0 0; }
+  </style>
+</head>
+<body>
+  <h3>일반 주행 FX (fx_sheet_alpha.png)</h3>
+  <div class="controls">
+    <label>행: <select id="fxRow">
+      <option value="0">1행</option>
+      <option value="1">2행</option>
+      <option value="2" selected>3행 (보통)</option>
+      <option value="3">4행 (느림)</option>
+    </select></label>
+    <label>FPS: <input type="range" id="fxFps" min="1" max="30" value="8"> <span id="fxFpsVal">8</span></label>
+    <label>크기: <input type="range" id="fxSize" min="20" max="150" value="60"> <span id="fxSizeVal">60</span></label>
+    <label><input type="checkbox" id="fxFlip" checked> 좌우반전</label>
+  </div>
+  <canvas id="fxCanvas" width="400" height="200"></canvas>
+
+  <h3>급가속 FX (dust_fx_reference_alpha.png)</h3>
+  <div class="controls">
+    <label>FPS: <input type="range" id="burstFps" min="1" max="30" value="18"> <span id="burstFpsVal">18</span></label>
+    <label>크기: <input type="range" id="burstSize" min="20" max="200" value="80"> <span id="burstSizeVal">80</span></label>
+    <label><input type="checkbox" id="burstFlipAuto" checked> 2~6번 자동반전</label>
+  </div>
+  <canvas id="burstCanvas" width="600" height="200"></canvas>
+
+  <h3>개별 프레임 확인</h3>
+  <canvas id="framesCanvas" width="800" height="400"></canvas>
+
+<script>
+  const ASSET_BASE = 'assets/';
+
+  const fxImg = new Image();
+  fxImg.src = ASSET_BASE + 'fx_sheet_alpha.png';
+
+  const burstImg = new Image();
+  burstImg.src = ASSET_BASE + 'dust_fx_reference_alpha.png';
+
+  const FX_COLS = 6, FX_ROWS = 4, FX_TITLE = 0.12;
+  const BURST_COLS = 6, BURST_ROWS = 2, BURST_TOTAL = 12;
+
+  // --- 일반 FX ---
+  const fxCanvas = document.getElementById('fxCanvas');
+  const fxCtx = fxCanvas.getContext('2d');
+  let fxFrame = 0;
+
+  function drawFx(now) {
+    const row = parseInt(document.getElementById('fxRow').value);
+    const fps = parseInt(document.getElementById('fxFps').value);
+    const size = parseInt(document.getElementById('fxSize').value);
+    const flip = document.getElementById('fxFlip').checked;
+    document.getElementById('fxFpsVal').textContent = fps;
+    document.getElementById('fxSizeVal').textContent = size;
+
+    fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+
+    if (!fxImg.naturalWidth) { requestAnimationFrame(drawFx); return; }
+
+    const fw = fxImg.naturalWidth / FX_COLS;
+    const titleH = fxImg.naturalHeight * FX_TITLE;
+    const fh = (fxImg.naturalHeight - titleH) / FX_ROWS;
+    const fi = Math.floor(fxFrame) % FX_COLS;
+    const srcY = titleH + row * fh;
+
+    // 프레임 번호 표시
+    fxCtx.fillStyle = '#aaa';
+    fxCtx.font = '14px monospace';
+    fxCtx.textAlign = 'left';
+    fxCtx.fillText(`Row ${row + 1}, Frame ${fi + 1}/${FX_COLS}`, 10, 20);
+
+    const cx = fxCanvas.width / 2;
+    const cy = fxCanvas.height / 2;
+    const offsets = [0, 0, 0, 0.4, 0.7, 1.0];
+    const trail = offsets[fi] * size;
+
+    // 매머드 발끝 기준점 (오른쪽 — 매머드가 오른쪽으로 달림)
+    const footX = fxCanvas.width * 0.7;
+    fxCtx.strokeStyle = '#f06060';
+    fxCtx.setLineDash([4, 4]);
+    fxCtx.beginPath(); fxCtx.moveTo(footX, 30); fxCtx.lineTo(footX, fxCanvas.height - 10); fxCtx.stroke();
+    fxCtx.setLineDash([]);
+    fxCtx.fillStyle = '#f06060';
+    fxCtx.textAlign = 'center';
+    fxCtx.fillText('▼ foot', footX, 38);
+    fxCtx.textAlign = 'left';
+
+    fxCtx.save();
+    // 좌우반전 기준: 이미지 오른쪽 끝이 발끝에 닿도록
+    fxCtx.translate(footX - trail, cy);
+    if (flip) fxCtx.scale(-1, 1);
+    fxCtx.drawImage(fxImg, fi * fw, srcY, fw, fh,
+      flip ? 0 : -size, -size / 2, size, size);
+    fxCtx.restore();
+
+    fxFrame += fps / 60;
+    requestAnimationFrame(drawFx);
+  }
+
+  // --- 급가속 FX ---
+  const burstCanvas = document.getElementById('burstCanvas');
+  const burstCtx = burstCanvas.getContext('2d');
+  let burstFrame = 0;
+
+  function drawBurst(now) {
+    const fps = parseInt(document.getElementById('burstFps').value);
+    const size = parseInt(document.getElementById('burstSize').value);
+    const autoFlip = document.getElementById('burstFlipAuto').checked;
+    document.getElementById('burstFpsVal').textContent = fps;
+    document.getElementById('burstSizeVal').textContent = size;
+
+    burstCtx.clearRect(0, 0, burstCanvas.width, burstCanvas.height);
+
+    if (!burstImg.naturalWidth) { requestAnimationFrame(drawBurst); return; }
+
+    const fw = burstImg.naturalWidth / BURST_COLS;
+    const fh = burstImg.naturalHeight / BURST_ROWS;
+    const fi = Math.floor(burstFrame) % BURST_TOTAL;
+    const col = fi % BURST_COLS;
+    const row = Math.floor(fi / BURST_COLS);
+    const needFlip = autoFlip && fi >= 1 && fi <= 5;
+
+    burstCtx.fillStyle = '#aaa';
+    burstCtx.font = '14px monospace';
+    burstCtx.textAlign = 'left';
+    burstCtx.fillText(`Frame ${fi + 1}/${BURST_TOTAL}${needFlip ? ' (flipped)' : ''}`, 10, 20);
+
+    const cx = burstCanvas.width / 2;
+    const cy = burstCanvas.height / 2;
+
+    burstCtx.save();
+    burstCtx.translate(cx, cy);
+    if (needFlip) burstCtx.scale(-1, 1);
+    burstCtx.drawImage(burstImg, col * fw, row * fh, fw, fh,
+      -size / 2, -size / 2, size, size);
+    burstCtx.restore();
+
+    burstFrame += fps / 60;
+    requestAnimationFrame(drawBurst);
+  }
+
+  // --- 개별 프레임 ---
+  const framesCanvas = document.getElementById('framesCanvas');
+  const frCtx = framesCanvas.getContext('2d');
+
+  function drawAllFrames() {
+    frCtx.clearRect(0, 0, framesCanvas.width, framesCanvas.height);
+
+    // 일반 FX 3행, 4행
+    if (fxImg.naturalWidth) {
+      const fw = fxImg.naturalWidth / FX_COLS;
+      const titleH = fxImg.naturalHeight * FX_TITLE;
+      const fh = (fxImg.naturalHeight - titleH) / FX_ROWS;
+      const tileSize = 55;
+
+      frCtx.fillStyle = '#ccc';
+      frCtx.font = '12px monospace';
+      frCtx.fillText('fx_sheet row 3 (보통):', 10, 15);
+      for (let i = 0; i < FX_COLS; i++) {
+        frCtx.drawImage(fxImg, i * fw, titleH + 2 * fh, fw, fh,
+          10 + i * (tileSize + 8), 22, tileSize, tileSize);
+        frCtx.fillStyle = '#888';
+        frCtx.fillText(`${i + 1}`, 10 + i * (tileSize + 8) + tileSize / 2 - 4, 22 + tileSize + 14);
+        frCtx.fillStyle = '#ccc';
+      }
+
+      frCtx.fillText('fx_sheet row 4 (느림):', 10, 110);
+      for (let i = 0; i < FX_COLS; i++) {
+        frCtx.drawImage(fxImg, i * fw, titleH + 3 * fh, fw, fh,
+          10 + i * (tileSize + 8), 117, tileSize, tileSize);
+        frCtx.fillStyle = '#888';
+        frCtx.fillText(`${i + 1}`, 10 + i * (tileSize + 8) + tileSize / 2 - 4, 117 + tileSize + 14);
+        frCtx.fillStyle = '#ccc';
+      }
+    }
+
+    // 급가속 FX
+    if (burstImg.naturalWidth) {
+      const fw = burstImg.naturalWidth / BURST_COLS;
+      const fh = burstImg.naturalHeight / BURST_ROWS;
+      const tileSize = 55;
+
+      frCtx.fillStyle = '#ccc';
+      frCtx.fillText('burst FX (1~12):', 10, 210);
+      for (let i = 0; i < BURST_TOTAL; i++) {
+        const col = i % BURST_COLS;
+        const row = Math.floor(i / BURST_COLS);
+        const x = 10 + i * (tileSize + 8);
+        const y = 217;
+
+        frCtx.save();
+        const needFlip = i >= 1 && i <= 5;
+        if (needFlip) {
+          frCtx.translate(x + tileSize, y);
+          frCtx.scale(-1, 1);
+          frCtx.drawImage(burstImg, col * fw, row * fh, fw, fh, 0, 0, tileSize, tileSize);
+        } else {
+          frCtx.drawImage(burstImg, col * fw, row * fh, fw, fh, x, y, tileSize, tileSize);
+        }
+        frCtx.restore();
+
+        frCtx.fillStyle = needFlip ? '#f06060' : '#888';
+        frCtx.fillText(`${i + 1}${needFlip ? 'F' : ''}`, x + tileSize / 2 - 6, y + tileSize + 14);
+        frCtx.fillStyle = '#ccc';
+      }
+    }
+
+    requestAnimationFrame(drawAllFrames);
+  }
+
+  fxImg.onload = burstImg.onload = () => {};
+  requestAnimationFrame(drawFx);
+  requestAnimationFrame(drawBurst);
+  requestAnimationFrame(drawAllFrames);
+</script>
+</body>
+</html>
