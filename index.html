@@ -154,7 +154,7 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-height: calc(4.8 * 54px + 3.8 * 8px);
+      max-height: calc(3.2 * 54px + 2.2 * 8px);
       overflow-y: auto;
       padding-right: 2px;
       padding-bottom: 4px;
@@ -1814,7 +1814,10 @@
       const rows = getMammothRows();
       const count = rows.length;
       mammothCountEl.textContent = `(${count}/12)`;
-      addMammothBtn.disabled = count >= MAX_MAMMOTHS;
+      addMammothBtn.style.display = count >= MAX_MAMMOTHS ? 'none' : '';
+      mammothListEl.style.maxHeight = count >= MAX_MAMMOTHS
+        ? 'calc(4.2 * 54px + 3.2 * 8px)'
+        : 'calc(3.2 * 54px + 2.2 * 8px)';
       rows.forEach((row, i) => {
         row.querySelector('.mammoth-row-num').textContent = `${i + 1}`;
         const removeBtn = row.querySelector('.btn-remove-mammoth');
