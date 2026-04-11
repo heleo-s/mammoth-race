@@ -432,7 +432,7 @@
       "></div>
       <div id="resultDimOverlay" style="
         display:none; position:absolute; left:0; top:0; width:100%; height:100%;
-        display:none; pointer-events:none;
+        background:rgba(15,30,55,0.45); pointer-events:none; z-index:8;
       "></div>
       <div id="resultNameOverlay" style="
         display:none; position:absolute; left:0; top:0; width:100%; height:100%;
@@ -865,14 +865,15 @@
 
       // Sky: sky.svg stretched to fill 0 to H*0.42
       // 하늘 그라데이션
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, tTop);
-      skyGrad.addColorStop(0, '#7ecbff');
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+      skyGrad.addColorStop(0, '#5aa8e6');
+      skyGrad.addColorStop(0.2, '#7ecbff');
       skyGrad.addColorStop(0.45, '#bde9ff');
       skyGrad.addColorStop(0.65, '#d1f0ff');
       skyGrad.addColorStop(0.8, '#e4f6ff');
       skyGrad.addColorStop(1, '#f5fcff');
       ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, W, tTop);
+      ctx.fillRect(0, 0, W, H);
 
       // 산 원경 — far_1~4 랜덤 겹침 배치
       const mtImgs = [assets['far_1'], assets['far_2'], assets['far_3'], assets['far_4']].filter(
@@ -946,7 +947,7 @@
         }
         // 포그 — 원경 건물 위에 반투명 안개
         ctx.fillStyle = 'rgba(220, 235, 245, 0.4)';
-        ctx.fillRect(0, farY, W, farH);
+        ctx.fillRect(0, 0, W, farY + farH);
         ctx.globalAlpha = 1;
       }
 
