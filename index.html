@@ -1389,8 +1389,9 @@
         const isFocus = rank === focusRank;
         const row = rankRows.children[i];
         row.style.height = rowH + 'px';
-        row.style.width = (rankW - 4) + 'px';
-        row.style.padding = '0 2px';
+        row.style.width = rankW + 'px';
+        row.style.boxSizing = 'border-box';
+        row.style.padding = '0 4px';
         row.style.overflow = 'hidden';
         row.style.background = isFocus ? 'rgba(90,181,240,0.22)' : 'transparent';
         const [sNum, chip, sName, sDist] = row.children;
