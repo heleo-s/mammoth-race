@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
   <style>
@@ -18,14 +18,10 @@
       --outline: #2a2a2a;
       /* 버튼 - 블루 */
       --btn-blue: #5ab5f0;
-      --btn-blue-hi: #7ed4ff;
       --btn-blue-shadow: #2a7bbf;
       /* 버튼 - 레드 */
       --btn-red: #f06060;
       --btn-red-shadow: #bf2a2a;
-      /* 버튼 - 옐로 */
-      --btn-yellow: #f5c842;
-      --btn-yellow-shadow: #c8920a;
       /* 버튼 공통 */
       --btn-text: #ffffff;
       --btn-radius: 14px;
@@ -1371,7 +1367,7 @@
         const sNum = document.createElement('span');
         sNum.style.cssText = `width:${Math.round(12*rankScale)}px;text-align:right;flex-shrink:0;margin-left:-2px;`;
         const sName = document.createElement('span');
-        sName.style.cssText = `flex:1;overflow:hidden;text-overflow:ellipsis;margin-left:${Math.round(6*rankScale)}px;color:#1f3650;`;
+        sName.style.cssText = `flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;margin-left:${Math.round(6*rankScale)}px;color:#1f3650;`;
         const sDist = document.createElement('span');
         sDist.style.cssText = `text-align:right;font-size:${Math.round(10*rankScale)}px;margin-left:${Math.round(4*rankScale)}px;flex-shrink:0;`;
         row.appendChild(sNum); row.appendChild(chip); row.appendChild(sName); row.appendChild(sDist);
@@ -2039,6 +2035,7 @@
       const nameInput = document.createElement('input');
       nameInput.type = 'text';
       nameInput.placeholder = '매머드 이름';
+      nameInput.maxLength = 6;
       nameInput.value = name;
 
       const removeBtn = document.createElement('button');
@@ -2120,8 +2117,11 @@
       const data = collectMammothData();
       if (data.length < 2) return;
       setCameraOptions(data.length);
-      showRaceScreen();
-      setTimeout(() => initRaceWithData(data), 50);
+      // 버튼 눌림 피드백 보여준 뒤 화면 전환
+      setTimeout(() => {
+        showRaceScreen();
+        setTimeout(() => initRaceWithData(data), 50);
+      }, 150);
     });
 
     function initRaceWithData(data) {
