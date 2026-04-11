@@ -896,8 +896,11 @@
           const nh = img.naturalHeight || img.height;
           return nh * uScale;
         });
-        const overlaps = [200 * uScale, 200 * uScale, 200 * uScale]; // 이미지별 겹침 (스케일 비례)
-        const yOffsets = [48 * uScale, 70 * uScale, 74.5 * uScale]; // 이미지별 y보정 (스케일 비례)
+        // 원본 픽셀 기준 값 → uScale로 스크린 스케일 적용
+        const rawOverlaps = [200, 200, 200];
+        const rawYOffsets = [48, 70, 74.5];
+        const overlaps = rawOverlaps.map(v => v * uScale);
+        const yOffsets = rawYOffsets.map(v => v * uScale);
         const effectiveWidths = widths.map((w, i) => w - overlaps[i % overlaps.length]);
         const cycleW = effectiveWidths.reduce((a, b) => a + b, 0);
         // 출발점보다 앞에서 시작
