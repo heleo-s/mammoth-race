@@ -1407,7 +1407,7 @@
         const isFinished = finishOrder.includes(m);
         const isFocus = rank === focusRank;
         const row = rankRows.children[i];
-        row.style.background = 'transparent';
+        row.style.background = isFocus ? 'rgba(90,181,240,0.22)' : 'transparent';
         const [sNum, chip, sName, sDist] = row.children;
         sNum.textContent = rank;
         sNum.style.color = rank <= 3 ? '#c8920a' : '#1f3650';
