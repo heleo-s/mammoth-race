@@ -432,7 +432,7 @@
       "></div>
       <div id="resultDimOverlay" style="
         display:none; position:absolute; left:0; top:0; width:100%; height:100%;
-        background:rgba(15,30,55,0.45); pointer-events:none; z-index:8;
+        display:none; pointer-events:none;
       "></div>
       <div id="resultNameOverlay" style="
         display:none; position:absolute; left:0; top:0; width:100%; height:100%;
@@ -1731,6 +1731,7 @@
       // 배경 딤
       ctx.fillStyle = 'rgba(15,30,55,0.45)';
       ctx.fillRect(0, 0, W, H);
+
 
       const bw = Math.min(W * 0.85, 340);
       const bh = Math.min(H * 0.65, 360);
