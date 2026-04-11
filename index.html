@@ -865,14 +865,14 @@
 
       // Sky: sky.svg stretched to fill 0 to H*0.42
       // 하늘 그라데이션
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.42);
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, tTop);
       skyGrad.addColorStop(0, '#7ecbff');
-      skyGrad.addColorStop(0.5, '#bde9ff');
-      skyGrad.addColorStop(0.72, '#d1f0ff');
-      skyGrad.addColorStop(0.88, '#e4f6ff');
+      skyGrad.addColorStop(0.45, '#bde9ff');
+      skyGrad.addColorStop(0.65, '#d1f0ff');
+      skyGrad.addColorStop(0.8, '#e4f6ff');
       skyGrad.addColorStop(1, '#f5fcff');
       ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, W, H * 0.42);
+      ctx.fillRect(0, 0, W, tTop);
 
       // 산 원경 — far_1~4 랜덤 겹침 배치
       const mtImgs = [assets['far_1'], assets['far_2'], assets['far_3'], assets['far_4']].filter(
