@@ -584,10 +584,37 @@
       }
     }
 
-    // Load assets immediately at page load time
-    loadAssets();
+    // FX 이미지 흙색→흰색 변환
+    function snowifyFxAsset(img) {
+      if (!img || !img.naturalWidth) return img;
+      const oc = document.createElement('canvas');
+      oc.width = img.naturalWidth;
+      oc.height = img.naturalHeight;
+      const octx = oc.getContext('2d', { willReadFrequently: true });
+      octx.drawImage(img, 0, 0);
+      const imgData = octx.getImageData(0, 0, oc.width, oc.height);
+      const d = imgData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 10) continue;
+        // 흙색/갈색 계열을 흰색으로, 명도 유지
+        const avg = (d[i] + d[i + 1] + d[i + 2]) / 3;
+        const brightness = Math.min(255, avg + 80);
+        d[i] = brightness;
+        d[i + 1] = brightness;
+        d[i + 2] = brightness;
+      }
+      octx.putImageData(imgData, 0, 0);
+      return oc;
+    }
 
-    function hasAsset(name) { return assets[name] && assets[name].naturalWidth > 0; }
+    // Load assets immediately at page load time
+    loadAssets(() => {
+      // FX 에셋 눈 색상으로 변환
+      if (assets['fx_sheet_alpha']) assets['fx_sheet_alpha'] = snowifyFxAsset(assets['fx_sheet_alpha']);
+      if (assets['dust_fx_reference_alpha']) assets['dust_fx_reference_alpha'] = snowifyFxAsset(assets['dust_fx_reference_alpha']);
+    });
+
+    function hasAsset(name) { return assets[name] && (assets[name].naturalWidth > 0 || assets[name].width > 0); }
 
     // Tiled layer drawing: scales image to fit height, tiles horizontally with parallax offset
     function drawTiledLayer(img, y, h, parallax) {
@@ -711,11 +738,11 @@
         const dispH = SPRITE_BASE_H * scale;
 
         // 일반 주행 FX (버스트 중엔 스킵)
-        if (m.burstFrame < 0 && fxImg && fxImg.naturalWidth) {
+        if (m.burstFrame < 0 && fxImg && (fxImg.naturalWidth || fxImg.width)) {
           const fi = Math.floor(m.dustFrame) % FX_COLS;
           const slow = m.smoothVel < BASE_SPEED * 0.9;
-          const titleH = Math.round(fxImg.naturalHeight * FX_TITLE_RATIO);
-          const fh = Math.floor((fxImg.naturalHeight - titleH) / FX_ROWS);
+          const titleH = Math.round((fxImg.naturalHeight || fxImg.height) * FX_TITLE_RATIO);
+          const fh = Math.floor(((fxImg.naturalHeight || fxImg.height) - titleH) / FX_ROWS);
           const row = slow ? 3 : 2;
           const srcY = titleH + row * fh;
 
@@ -726,7 +753,7 @@
             srcW = FX_ROW3_FRAMES[fi][1];
           } else {
             // 4행: 균일 간격 + pad
-            const fw = Math.floor(fxImg.naturalWidth / FX_COLS);
+            const fw = Math.floor((fxImg.naturalWidth || fxImg.width) / FX_COLS);
             const pad = 1;
             srcX = fi * fw + pad;
             srcW = fw - pad * 2;
@@ -742,7 +769,7 @@
           const fxOffY = -6 * scale;
           ctx.translate(sx - dispW2 * 0.35 + fxOffX - trailOffset, ly + dispH * 0.29 + fxOffY);
           ctx.scale(-1, 1);
-          const baseW = Math.floor(fxImg.naturalWidth / FX_COLS);
+          const baseW = Math.floor((fxImg.naturalWidth || fxImg.width) / FX_COLS);
           const renderW = drawSize * (srcW / baseW);
           ctx.drawImage(fxImg, srcX, srcY, srcW, fh,
             -renderW, -drawSize * 0.5, renderW, drawSize);
@@ -750,7 +777,7 @@
         }
 
         // 급가속 FX
-        if (m.burstFrame >= 0 && burstImg && burstImg.naturalWidth) {
+        if (m.burstFrame >= 0 && burstImg && (burstImg.naturalWidth || burstImg.width)) {
           const fi = Math.floor(m.burstFrame);
           if (fi < BURST_FX_TOTAL) {
             const [bx, by, bw, bh] = BURST_FRAMES[fi];
