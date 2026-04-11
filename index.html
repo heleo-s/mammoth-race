@@ -557,12 +557,8 @@
 
     // ===== SVG image asset loader =====
     const ASSET_BASE = 'assets/';
-    const SVG_ASSET_NAMES = [
-      'sky', 'mountains-far', 'mountains-near',
-      'city-far', 'city-near', 'river',
-      'grass', 'track', 'trees', 'clouds', 'shrubs'
-    ];
-    const PNG_ASSET_NAMES = ['running_mammoth_sprite_sheet', 'snowy_track', 'result_mmt', 'fx_sheet_alpha', 'dust_fx_reference_alpha'];
+    const SVG_ASSET_NAMES = [];
+    const PNG_ASSET_NAMES = ['running_mammoth_sprite_sheet', 'snowy_track', 'result_mmt', 'fx_sheet_alpha', 'dust_fx_reference_alpha', 'middle_1', 'middle_2', 'middle_3'];
     const assets = {};
     let assetsLoaded = false;
 
@@ -868,71 +864,58 @@
       const { tTop, tBot } = getTrackBounds();
 
       // Sky: sky.svg stretched to fill 0 to H*0.42
-      const skyH = H * 0.42;
-      if (hasAsset('sky')) {
-        ctx.drawImage(assets['sky'], 0, 0, W, skyH);
-      } else {
-        const skyGrad = ctx.createLinearGradient(0, 0, 0, skyH);
-        skyGrad.addColorStop(0, '#7ecbff');
-        skyGrad.addColorStop(0.5, '#bde9ff');
-        skyGrad.addColorStop(0.72, '#d1f0ff');
-        skyGrad.addColorStop(0.88, '#e4f6ff');
-        skyGrad.addColorStop(1, '#f5fcff');
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, W, skyH);
-      }
+      // 하늘 그라데이션
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.42);
+      skyGrad.addColorStop(0, '#7ecbff');
+      skyGrad.addColorStop(0.5, '#bde9ff');
+      skyGrad.addColorStop(0.72, '#d1f0ff');
+      skyGrad.addColorStop(0.88, '#e4f6ff');
+      skyGrad.addColorStop(1, '#f5fcff');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, H * 0.42);
 
-      // mountains-far.svg tiled with parallax 0.004
-      if (hasAsset('mountains-far')) {
-        drawTiledLayer(assets['mountains-far'], H * 0.18, H * 0.18, 0.004);
-      }
+      // 중경 — middle_1, 2, 3 순차 반복 (울타리 뒤편)
+      const middleImgs = [assets['middle_1'], assets['middle_2'], assets['middle_3']].filter(
+        img => img && (img.naturalWidth || img.width)
+      );
+      if (middleImgs.length > 0) {
+        const midH = H * 0.50;
+        const midY = tTop - midH * 0.8;
+        const parallax = 0.5;
 
-      // mountains-near.svg tiled with parallax 0.01
-      if (hasAsset('mountains-near')) {
-        drawTiledLayer(assets['mountains-near'], H * 0.24, H * 0.14, 0.01);
-      }
-
-      // city-far.svg tiled with parallax 0.016
-      if (hasAsset('city-far')) {
-        drawTiledLayer(assets['city-far'], H * 0.30, H * 0.10, 0.016);
-      }
-
-      // city-near.svg tiled with parallax 0.03
-      if (hasAsset('city-near')) {
-        drawTiledLayer(assets['city-near'], H * 0.335, H * 0.12, 0.03);
-      }
-
-      // river.svg tiled with parallax 0.002
-      const riverY = H * 0.345;
-      const riverH = H * 0.045;
-      if (hasAsset('river')) {
-        drawTiledLayer(assets['river'], riverY, riverH, 0.002);
-      }
-
-      // grass.svg to fill grass area between river and track
-      const grassY = riverY + riverH;
-      const grassH = tTop - grassY;
-      if (grassH > 0 && hasAsset('grass')) {
-        drawTiledLayer(assets['grass'], grassY, grassH, 0.04);
-      }
-
-      // trees.svg tiled with parallax 0.04 in the grass area
-      if (grassH > 0 && hasAsset('trees')) {
-        drawTiledLayer(assets['trees'], grassY, grassH, 0.04);
-      }
-
-      // Bottom area below the track: snowy_track이 덮으므로 생략
-      if (!hasAsset('snowy_track')) {
-        const shrubY = tBot;
-        const shrubH = H - tBot;
-        if (shrubH > 0) {
-          ctx.fillStyle = '#3d7e22';
-          ctx.fillRect(0, shrubY, W, shrubH);
-          if (hasAsset('shrubs')) {
-            drawTiledLayer(assets['shrubs'], shrubY, shrubH, 0.03);
-          }
+        const offset = (cameraX * parallax);
+        // 통일 스케일: 가장 큰 높이 기준, 바닥 정렬
+        const maxNH = Math.max(...middleImgs.map(img => img.naturalHeight || img.height));
+        const uScale = midH / maxNH;
+        const midBottom = midY + midH;
+        const widths = middleImgs.map(img => {
+          const nw = img.naturalWidth || img.width;
+          return nw * uScale;
+        });
+        const heights = middleImgs.map(img => {
+          const nh = img.naturalHeight || img.height;
+          return nh * uScale;
+        });
+        const overlaps = [200, 200, 200]; // 이미지별 겹침
+        const yOffsets = [48, 70, 74.5]; // 이미지별 y보정
+        const effectiveWidths = widths.map((w, i) => w - overlaps[i % overlaps.length]);
+        const cycleW = effectiveWidths.reduce((a, b) => a + b, 0);
+        // 출발점보다 앞에서 시작
+        const headStart = widths[0] * 2;
+        let startX = -(offset % cycleW) - cycleW - headStart;
+        let x = startX;
+        let idx = 0;
+        while (x < W + cycleW + headStart) {
+          const i = idx % middleImgs.length;
+          const img = middleImgs[i];
+          const w = widths[i];
+          const h = heights[i];
+          ctx.drawImage(img, x, midBottom - h + yOffsets[i], w, h);
+          x += w - overlaps[i];
+          idx++;
         }
       }
+
     }
 
     // ===== Track (SVG base + canvas overlays) =====
