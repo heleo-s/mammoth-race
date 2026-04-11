@@ -432,7 +432,7 @@
   <script>
 
     const RACE_DURATION = 20000;
-    const DISPLAY_METERS = 250;
+    const DISPLAY_METERS = 200;
     const TRACK_LENGTH = Math.round(4000 * (DISPLAY_METERS / 300));
     const LANE_COUNT = 8;
     const BASE_SPEED = TRACK_LENGTH / (RACE_DURATION / 1000);
@@ -440,7 +440,7 @@
     const TRACK_HEIGHT_N = 0.23;
     const BASE_WORLD_SCALE = 0.78; // worldToScreenX 고정 스케일
     const ZOOM_DEFAULT = 1.0;      // 줌 팩터 기본값
-    const ZOOM_MIN = 0.85;         // 최대 줌아웃
+    const ZOOM_MIN = 1.20;         // 최대 줌아웃
     const ZOOM_MAX = 1.80;         // 최대 줌인
     const MAMMOTH_SCALE_MULT = 1.28;
     const CAMERA_RETARGET_SPEED = 3400;
@@ -998,10 +998,9 @@
         if (d[i + 3] < 20) continue;
         const [h, s, l] = rgbToHsl(d[i], d[i + 1], d[i + 2]);
         if (h >= 195 && h <= 265 && s > 0.28 && l > 0.14 && l < 0.82) {
-          // 무채색(흰·검): 타겟 명도 기준으로 음영 유지, 유채색: 원본 명도 유지
-          const newL = ts < 0.08
-            ? Math.max(0, Math.min(1, tl + (l - BASE_L) * 0.4))
-            : l;
+          // 타겟 명도 기준으로 원본 음영 유지 (무채색은 비율 줄임)
+          const lFactor = ts < 0.08 ? 0.4 : 0.7;
+          const newL = Math.max(0, Math.min(1, tl + (l - BASE_L) * lFactor));
           const [nr, ng, nb] = hslToRgb(th, ts, newL);
           d[i] = nr; d[i + 1] = ng; d[i + 2] = nb;
         }
@@ -1020,7 +1019,7 @@
 
       // 줌 적용 후 실제 화면 좌표 계산용
       const focusCam = getCameraTargetMammoth();
-      const zoomCx = focusCam ? worldToScreenX(focusCam.x) : W * 0.5;
+      const zoomCx = W * 0.30;
 
       const sorted = [...mammoths].sort((a, b) => a.z - b.z);
 
@@ -1034,15 +1033,33 @@
         const dispH = SPRITE_BASE_H * scale;
         const dispW = dispH * 1.2;
 
-        // 인디케이터: 화면 밖으로 나가는 순간부터
-        if (renderedSx < 0) offL.push({ m, ly });
-        else if (renderedSx > W) offR.push({ m, ly });
+        // 인디케이터: 미완주 매머드만, 화면 밖으로 나가는 순간부터
+        if (!m.finished) {
+          if (renderedSx < 0) offL.push({ m, ly });
+          else if (renderedSx > W) offR.push({ m, ly });
+        }
 
         // 완전히 벗어나면 드로우 스킵
         if (renderedSx < -dispW || renderedSx > W + dispW) continue;
 
         const phase = raceRunning && !racePaused && !countdownActive ? (now - raceStartTime - pausedTotal - COUNTDOWN_DURATION) / 1000 + m.index * 0.5 : 0;
-        drawMammoth(sx, ly, m, scale, m.finished ? 0 : phase);
+        drawMammoth(sx, ly, m, scale, phase);
+
+        // 타겟 매머드 인디케이터
+        const targetM = getCameraTargetMammoth();
+        if (m === targetM && !resultTriggered && raceRunning && !countdownActive) {
+          const indY = ly - SPRITE_BASE_H * scale * 0.56;
+          const bob = Math.sin(now / 350) * 3;
+          ctx.fillStyle = m.color;
+          ctx.strokeStyle = '#1f3650';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(sx, indY + bob + 6);
+          ctx.lineTo(sx - 6, indY + bob - 4);
+          ctx.lineTo(sx + 6, indY + bob - 4);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+        }
 
         if (raceRunning && !m.finished && !racePaused && !countdownActive) spawnDust(m.x, ly, 'rgba(180,160,120,0.3)');
       }
@@ -1320,8 +1337,8 @@
 
       if (!raceRunning) return;
 
-      // 동적 줌: 카운트다운 중에도 적용
-      {
+      // 동적 줌: 결과 트리거 후에는 고정
+      if (!resultTriggered) {
         const focusCam = getCameraTargetMammoth();
         let targetScale;
         if (focusCam) {
@@ -1331,7 +1348,7 @@
             const fitScale = (W * 0.40) / Math.max(nearestDist * BASE_WORLD_SCALE, 1);
             targetScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, fitScale));
           } else {
-            targetScale = ZOOM_MAX;
+            targetScale = ZOOM_DEFAULT;
           }
         } else {
           targetScale = ZOOM_DEFAULT;
@@ -1339,14 +1356,15 @@
         worldScale += (targetScale - worldScale) * 0.04;
       }
 
-      // 카운트다운 중에도 카메라 추적 (끝날 때 튀지 않도록)
+      // 카메라 추적 (카운트다운 포함, 결과 후 고정)
       if (!resultTriggered) {
         const camTarget = getCameraTargetMammoth();
         if (camTarget) {
-          const anchor = W * 0.56;
-          let desiredCam = camTarget.x - (anchor - W * 0.35) / BASE_WORLD_SCALE;
+          const SCREEN_ANCHOR = W * 0.30;
+          const camRefX = Math.min(camTarget.x, TRACK_LENGTH);
+          let desiredCam = camRefX - (SCREEN_ANCHOR - W * 0.35) / BASE_WORLD_SCALE;
           const minCam = -W * 0.08 / BASE_WORLD_SCALE;
-          const maxCam = TRACK_LENGTH - (W * 0.52) / BASE_WORLD_SCALE;
+          const maxCam = TRACK_LENGTH + (W * 0.3) / BASE_WORLD_SCALE;
           desiredCam = Math.max(minCam, Math.min(maxCam, desiredCam));
           cameraX += (desiredCam - cameraX) * 0.12;
         }
@@ -1412,9 +1430,6 @@
 
       for (const m of mammoths) {
         if (m.finished) {
-          // 결승 통과 후 서서히 감속하며 화면 밖으로
-          m.velocity *= 0.992;
-          m.smoothVel += (m.velocity - m.smoothVel) * 0.05;
           const fps = Math.max(6, Math.min(10, 8 + (m.smoothVel / BASE_SPEED - 1) * 4));
           m.animFrame += fps * (dt / 1000);
           m.x += (m.velocity * dt) / 1000;
@@ -1457,56 +1472,20 @@
         m.x += (m.velocity * dt) / 1000;
         if (m.x >= TRACK_LENGTH && !m.finished) {
           m.finished = true; finishOrder.push(m);
-          if (finishOrder.length === 1) {
-            flashAlpha = 0.6;
-            spawnConfetti();
-          }
-          // focusRank 등수 통과 시 결과 트리거
+          // focusRank 등수 통과 시 플래시 + 컨페티 + 결과 트리거
           if (!resultTriggered && finishOrder.length >= focusRank) {
             resultTriggered = true;
             resultMammoth = finishOrder[focusRank - 1];
             resultBannerTarget = 1;
+            flashAlpha = 0.6;
+            spawnConfetti();
           }
         }
         else allFinished = false;
       }
 
-      const camTarget = getCameraTargetMammoth();
-      if (camTarget && !resultTriggered) {
-        const anchor = W * 0.56;
-        let desiredCam = camTarget.x - (anchor - W * 0.35) / BASE_WORLD_SCALE;
 
-        const minCam = -W * 0.08 / BASE_WORLD_SCALE;
-        const maxCam = TRACK_LENGTH - (W * 0.52) / BASE_WORLD_SCALE;
-        desiredCam = Math.max(minCam, Math.min(maxCam, desiredCam));
-
-        const dtSec = dt / 1000;
-
-        if (cameraPrevTargetIndex >= 0 && camTarget.index !== cameraPrevTargetIndex) {
-          const prevM = mammoths.find(m => m.index === cameraPrevTargetIndex);
-          if (prevM && prevM.finished) {
-            cameraSmoothRetarget = true;
-          }
-        }
-
-        if (cameraSmoothRetarget) {
-          const err = desiredCam - cameraX;
-          const step = CAMERA_RETARGET_SPEED * dtSec;
-          if (Math.abs(err) <= step) {
-            cameraX = desiredCam;
-            cameraSmoothRetarget = false;
-          } else {
-            cameraX += err > 0 ? step : -step;
-            cameraX = Math.max(minCam, Math.min(maxCam, cameraX));
-          }
-        } else {
-          cameraX = desiredCam;
-        }
-
-        cameraPrevTargetIndex = camTarget.index;
-      }
-
-      if (elapsed >= RACE_DURATION * 1.8 || allFinished) {
+      if (elapsed >= RACE_DURATION * 1.8) {
         raceRunning = false; raceFinished = true;
       }
     }
@@ -1522,14 +1501,10 @@
     }
 
     function getCameraTargetMammoth() {
-      const racing = mammoths.filter(m => !m.finished);
-      if (racing.length === 0) {
-        if (!mammoths.length) return null;
-        return [...mammoths].sort((a, b) => b.x - a.x)[0];
-      }
-      racing.sort((a, b) => b.x - a.x);
-      const idx = Math.min(Math.max(0, focusRank - 1), racing.length - 1);
-      return racing[idx];
+      if (!mammoths.length) return null;
+      const ranking = getCurrentRanking();
+      const idx = Math.min(focusRank - 1, ranking.length - 1);
+      return ranking[idx].m;
     }
 
     // ===== 결과 배너 — 오늘의 매머드 =====
@@ -1649,7 +1624,8 @@
 
       // 줌 transform — 포커스 매머드 기준으로 world 전체 확대/축소
       const focusMammoth = getCameraTargetMammoth();
-      const zoomCx = focusMammoth ? worldToScreenX(focusMammoth.x) : W * 0.5;
+      // 줌 중심을 카메라 앵커(30%)에 고정 — 줌 배율과 무관하게 매머드 위치 일관성 유지
+      const zoomCx = W * 0.30;
       ctx.save();
       const zoomCy = H * (TRACK_BOTTOM_N - TRACK_HEIGHT_N * 0.5); // 트랙 세로 중심
       ctx.translate(zoomCx, zoomCy);
