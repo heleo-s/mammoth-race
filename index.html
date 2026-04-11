@@ -653,6 +653,12 @@
     const FX_COLS = 6;
     const FX_ROWS = 4;
     const FX_TITLE_RATIO = 0.12; // 상단 타이틀 영역 비율
+    // 3행 수동 프레임 좌표 [x, w] — 시트가 균일 간격이 아님
+    const FX_ROW3_FRAMES = [
+      [0, 260], [260, 220], [480, 220], [700, 220], [920, 220], [1140, 236]
+    ];
+    // 4행은 균일 간격으로 충분
+
     const BURST_FX_COLS = 6;
     const BURST_FX_ROWS = 2;
     const BURST_FX_TOTAL = 12;
@@ -693,28 +699,39 @@
 
         // 일반 주행 FX (버스트 중엔 스킵)
         if (m.burstFrame < 0 && fxImg && fxImg.naturalWidth) {
-          const fw = fxImg.naturalWidth / FX_COLS;
-          const titleH = fxImg.naturalHeight * FX_TITLE_RATIO;
-          const fh = (fxImg.naturalHeight - titleH) / FX_ROWS;
           const fi = Math.floor(m.dustFrame) % FX_COLS;
           const slow = m.smoothVel < BASE_SPEED * 0.9;
+          const titleH = Math.round(fxImg.naturalHeight * FX_TITLE_RATIO);
+          const fh = Math.floor((fxImg.naturalHeight - titleH) / FX_ROWS);
           const row = slow ? 3 : 2;
           const srcY = titleH + row * fh;
-          // 3행(row=2) 1번 프레임 보정: 왼쪽으로 넘침 → 소스 넓혀서 포함
-          const extraW = (row === 2 && fi === 0) ? fw * 0.15 : 0;
-          const srcX = fi * fw - extraW;
+
+          let srcX, srcW;
+          if (row === 2) {
+            // 3행: 수동 좌표
+            srcX = FX_ROW3_FRAMES[fi][0];
+            srcW = FX_ROW3_FRAMES[fi][1];
+          } else {
+            // 4행: 균일 간격 + pad
+            const fw = Math.floor(fxImg.naturalWidth / FX_COLS);
+            const pad = 1;
+            srcX = fi * fw + pad;
+            srcW = fw - pad * 2;
+          }
+
           const drawSize = (slow ? 18 : 26) * scale;
-          // 프레임별 x오프셋: 먼지구름 중심이 뒤로 퍼지는 형태에 맞춤
-          const frameOffsets = [0, 0, 0, 0.4, 0.7, 1.0]; // fi 0~5
+          const frameOffsets = slow ? [0, 0, 0, 0.4, 0.7, 1.0] : [-0.3, 0, 0, 0.4, 0.7, 1.0];
           const trailOffset = frameOffsets[fi] * drawSize;
 
           ctx.save();
-          // 발끝 위치: 그림자 y = ly + dispH*0.29, 뒷발 x = sx - dispW*0.35
           const dispW2 = dispH * 1.2;
-          ctx.translate(sx - dispW2 * 0.35 - 7 - trailOffset, ly + dispH * 0.29 - 6);
+          const fxOffX = slow ? -10 : -14;
+          const fxOffY = -6;
+          ctx.translate(sx - dispW2 * 0.35 + fxOffX - trailOffset, ly + dispH * 0.29 + fxOffY);
           ctx.scale(-1, 1);
-          const renderW = drawSize * (1 + extraW / fw);
-          ctx.drawImage(fxImg, srcX, srcY, fw + extraW, fh,
+          const baseW = Math.floor(fxImg.naturalWidth / FX_COLS);
+          const renderW = drawSize * (srcW / baseW);
+          ctx.drawImage(fxImg, srcX, srcY, srcW, fh,
             -renderW, -drawSize * 0.5, renderW, drawSize);
           ctx.restore();
         }
@@ -732,7 +749,7 @@
 
             ctx.save();
             const dispW3 = dispH * 1.2;
-            ctx.translate(sx - dispW3 * 0.35 - 7, ly + dispH * 0.29 - 6);
+            ctx.translate(sx - dispW3 * 0.35 + 12, ly + dispH * 0.29 - 6);
             if (needFlip) {
               ctx.scale(1, 1); // 원본이 왼쪽향이라 반전하면 오른쪽(뒤쪽)
             } else {

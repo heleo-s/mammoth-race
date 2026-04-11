@@ -39,7 +39,7 @@
   <canvas id="burstCanvas" width="600" height="200"></canvas>
 
   <h3>개별 프레임 확인</h3>
-  <canvas id="framesCanvas" width="800" height="400"></canvas>
+  <canvas id="framesCanvas" width="800" height="520"></canvas>
 
 <script>
   const ASSET_BASE = 'assets/';
@@ -51,6 +51,9 @@
   burstImg.src = ASSET_BASE + 'dust_fx_reference_alpha.png';
 
   const FX_COLS = 6, FX_ROWS = 4, FX_TITLE = 0.12;
+  const SPRITE_COLS = 4, SPRITE_ROWS = 2;
+  const mammothImg = new Image();
+  mammothImg.src = ASSET_BASE + 'running_mammoth_sprite_sheet.png';
   const BURST_COLS = 6, BURST_ROWS = 2, BURST_TOTAL = 12;
 
   // --- 일반 FX ---
@@ -70,9 +73,9 @@
 
     if (!fxImg.naturalWidth) { requestAnimationFrame(drawFx); return; }
 
-    const fw = fxImg.naturalWidth / FX_COLS;
-    const titleH = fxImg.naturalHeight * FX_TITLE;
-    const fh = (fxImg.naturalHeight - titleH) / FX_ROWS;
+    const fw = Math.floor(fxImg.naturalWidth / FX_COLS);
+    const titleH = Math.round(fxImg.naturalHeight * FX_TITLE);
+    const fh = Math.floor((fxImg.naturalHeight - titleH) / FX_ROWS);
     const fi = Math.floor(fxFrame) % FX_COLS;
     const srcY = titleH + row * fh;
 
@@ -84,8 +87,11 @@
 
     const cx = fxCanvas.width / 2;
     const cy = fxCanvas.height / 2;
-    const offsets = [0, 0, 0, 0.4, 0.7, 1.0];
+    const slow = (row === 3);
+    const offsets = slow ? [0, 0, 0, 0.4, 0.7, 1.0] : [-0.3, 0, 0, 0.4, 0.7, 1.0];
     const trail = offsets[fi] * size;
+    const fxOffX = slow ? -10 : -14;
+    const fxOffY = -6;
 
     // 매머드 발끝 기준점 (오른쪽 — 매머드가 오른쪽으로 달림)
     const footX = fxCanvas.width * 0.7;
@@ -98,16 +104,18 @@
     fxCtx.fillText('▼ foot', footX, 38);
     fxCtx.textAlign = 'left';
 
-    // 3행(row=2) 1번 프레임 보정
-    const extraW = (row === 2 && fi === 0) ? fw * 0.15 : 0;
-    const srcX = fi * fw - extraW;
-    const renderW = size * (1 + extraW / fw);
+    // 메인과 동일: pad 1px, extraW 보정
+    const pad = 1;
+    const extraW = (row === 2 && fi === 0) ? Math.round(fw * 0.15) : 0;
+    const srcX = fi * fw - extraW + pad;
+    const srcW = fw + extraW - pad * 2;
+    const renderW = size * (srcW / fw);
 
     fxCtx.save();
-    fxCtx.translate(footX - trail, cy);
+    fxCtx.translate(footX + fxOffX - trail, cy + fxOffY);
     if (flip) fxCtx.scale(-1, 1);
-    fxCtx.drawImage(fxImg, srcX, srcY, fw + extraW, fh,
-      flip ? 0 : -renderW, -size / 2, renderW, size);
+    fxCtx.drawImage(fxImg, srcX, srcY, srcW, fh,
+      -renderW, -size / 2, renderW, size);
     fxCtx.restore();
 
     fxFrame += fps / 60;
@@ -163,21 +171,23 @@
   function drawAllFrames() {
     frCtx.clearRect(0, 0, framesCanvas.width, framesCanvas.height);
 
-    // 일반 FX 3행, 4행
+    // 일반 FX 3행, 4행 — 메인과 동일한 소스 계산
     if (fxImg.naturalWidth) {
-      const fw = fxImg.naturalWidth / FX_COLS;
-      const titleH = fxImg.naturalHeight * FX_TITLE;
-      const fh = (fxImg.naturalHeight - titleH) / FX_ROWS;
+      const fw = Math.floor(fxImg.naturalWidth / FX_COLS);
+      const titleH = Math.round(fxImg.naturalHeight * FX_TITLE);
+      const fh = Math.floor((fxImg.naturalHeight - titleH) / FX_ROWS);
       const tileSize = 55;
+      const pad = 1;
 
       frCtx.fillStyle = '#ccc';
       frCtx.font = '12px monospace';
       frCtx.fillText('fx_sheet row 3 (보통):', 10, 15);
       for (let i = 0; i < FX_COLS; i++) {
-        const ex = (i === 0) ? fw * 0.15 : 0;
-        const sx = i * fw - ex;
-        const rw = tileSize * (1 + ex / fw);
-        frCtx.drawImage(fxImg, sx, titleH + 2 * fh, fw + ex, fh,
+        const ex = (i === 0) ? Math.round(fw * 0.15) : 0;
+        const sx = i * fw - ex + pad;
+        const sw = fw + ex - pad * 2;
+        const rw = tileSize * (sw / fw);
+        frCtx.drawImage(fxImg, sx, titleH + 2 * fh, sw, fh,
           10 + i * (tileSize + 8), 22, rw, tileSize);
         frCtx.fillStyle = '#888';
         frCtx.fillText(`${i + 1}`, 10 + i * (tileSize + 8) + tileSize / 2 - 4, 22 + tileSize + 14);
@@ -186,7 +196,9 @@
 
       frCtx.fillText('fx_sheet row 4 (느림):', 10, 110);
       for (let i = 0; i < FX_COLS; i++) {
-        frCtx.drawImage(fxImg, i * fw, titleH + 3 * fh, fw, fh,
+        const sx = i * fw + pad;
+        const sw = fw - pad * 2;
+        frCtx.drawImage(fxImg, sx, titleH + 3 * fh, sw, fh,
           10 + i * (tileSize + 8), 117, tileSize, tileSize);
         frCtx.fillStyle = '#888';
         frCtx.fillText(`${i + 1}`, 10 + i * (tileSize + 8) + tileSize / 2 - 4, 117 + tileSize + 14);
@@ -222,6 +234,32 @@
         frCtx.fillStyle = needFlip ? '#f06060' : '#888';
         frCtx.fillText(`${i + 1}${needFlip ? 'F' : ''}`, x + tileSize / 2 - 6, y + tileSize + 14);
         frCtx.fillStyle = '#ccc';
+      }
+    }
+
+    // 매머드 스프라이트 프레임 (4열 × 2행)
+    if (mammothImg.naturalWidth) {
+      const mfw = mammothImg.naturalWidth / SPRITE_COLS;
+      const mfh = mammothImg.naturalHeight / SPRITE_ROWS;
+      const tileSize = 70;
+
+      frCtx.fillStyle = '#ccc';
+      frCtx.fillText('mammoth sprite (4x2):', 10, 310);
+      for (let r = 0; r < SPRITE_ROWS; r++) {
+        for (let c = 0; c < SPRITE_COLS; c++) {
+          const idx = r * SPRITE_COLS + c;
+          const x = 10 + c * (tileSize + 8);
+          const y = 320 + r * (tileSize + 20);
+          // 빨간 테두리로 소스 경계 표시
+          frCtx.strokeStyle = '#f06060';
+          frCtx.lineWidth = 1;
+          frCtx.strokeRect(x - 1, y - 1, tileSize + 2, tileSize + 2);
+          frCtx.drawImage(mammothImg, c * mfw, r * mfh, mfw, mfh,
+            x, y, tileSize, tileSize);
+          frCtx.fillStyle = '#888';
+          frCtx.fillText(`${idx + 1}`, x + tileSize / 2 - 4, y + tileSize + 14);
+          frCtx.fillStyle = '#ccc';
+        }
       }
     }
 
