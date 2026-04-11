@@ -470,7 +470,7 @@
           <canvas id="resultCharCanvas" style="margin-top:4px;"></canvas>
           <!-- 이름 + 컬러칩 -->
           <div id="resultNameRow" style="
-            display:flex; align-items:center; gap:6px; margin-bottom:16px;
+            display:flex; align-items:center; gap:6px; margin-bottom:6px;
           ">
             <div id="resultColorChip" style="
               border-radius:50%; border:1.5px solid #1f3650;
@@ -1425,9 +1425,9 @@
         const row = document.createElement('div');
         row.style.cssText = `display:flex;align-items:center;padding:0 6px;font-weight:900;font-size:${Math.round(11*rankScale)}px;white-space:nowrap;border-radius:${Math.round(5*rankScale)}px;`;
         const chip = document.createElement('div');
-        chip.style.cssText = `width:${Math.round(8*rankScale)}px;height:${Math.round(8*rankScale)}px;border-radius:50%;border:1px solid #1f3650;flex-shrink:0;`;
+        chip.style.cssText = `width:${Math.round(8*rankScale)}px;height:${Math.round(8*rankScale)}px;border-radius:50%;border:1px solid #1f3650;flex-shrink:0;margin-left:${Math.round(5*rankScale)}px;`;
         const sNum = document.createElement('span');
-        sNum.style.cssText = `width:${Math.round(12*rankScale)}px;text-align:right;flex-shrink:0;`;
+        sNum.style.cssText = `width:${Math.round(12*rankScale)}px;text-align:right;flex-shrink:0;margin-left:-2px;`;
         const sName = document.createElement('span');
         sName.style.cssText = `flex:1;overflow:hidden;text-overflow:ellipsis;margin-left:${Math.round(6*rankScale)}px;color:#1f3650;`;
         const sDist = document.createElement('span');
@@ -1447,6 +1447,7 @@
         const [sNum, chip, sName, sDist] = row.children;
         sNum.textContent = rank;
         sNum.style.color = rank <= 3 ? '#c8920a' : '#1f3650';
+        sNum.style.marginLeft = '-2px';
         chip.style.background = m.color;
         sName.textContent = m.name;
         sDist.textContent = isFinished ? 'FINISH' : `${toMeters(m.x)}m`;
@@ -1482,30 +1483,31 @@
       const scale = 0.6 + frac * 0.8;
       const alpha = Math.min(1, frac * 2.5);
 
+      // 오프스크린에 불투명으로 그린 뒤 알파 적용 (fill/stroke 믹싱 방지)
+      const fontSize = Math.min(W * 0.25, 120);
+      const buf = document.createElement('canvas');
+      const bsz = Math.ceil(fontSize * 2.5);
+      buf.width = bsz; buf.height = bsz;
+      const bctx = buf.getContext('2d');
+      bctx.font = `900 ${fontSize}px ${UI_FONT}`;
+      bctx.textAlign = 'center';
+      bctx.textBaseline = 'middle';
+      const bc = bsz / 2;
+
+      bctx.fillStyle = 'rgba(0,0,0,0.2)';
+      bctx.fillText(text, bc + 2, bc + 2);
+      bctx.strokeStyle = TITLE_BROWN;
+      bctx.lineWidth = 6;
+      bctx.lineJoin = 'round';
+      bctx.strokeText(text, bc, bc);
+      bctx.fillStyle = TITLE_GOLD;
+      bctx.fillText(text, bc, bc);
+
       ctx.save();
       ctx.translate(W / 2, H * 0.42);
       ctx.scale(scale, scale);
       ctx.globalAlpha = alpha;
-
-      // 텍스트 그림자
-      const fontSize = Math.min(W * 0.25, 120);
-      ctx.font = `900 ${fontSize}px ${UI_FONT}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // 그림자
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
-      ctx.fillText(text, 2, 2);
-
-      // 외곽선 먼저 → 채우기 위에 올려서 엣지 선명하게
-      ctx.strokeStyle = TITLE_BROWN;
-      ctx.lineWidth = 6;
-      ctx.lineJoin = 'round';
-      ctx.strokeText(text, 0, 0);
-
-      ctx.fillStyle = TITLE_GOLD;
-      ctx.fillText(text, 0, 0);
-
+      ctx.drawImage(buf, -bc, -bc);
       ctx.restore();
       ctx.globalAlpha = 1;
     }
@@ -1520,27 +1522,30 @@
       const alpha = 1 - frac;
       const scale = 1 + frac * 0.3;
 
+      const fontSize = Math.min(W * 0.2, 100);
+      const buf = document.createElement('canvas');
+      const bsz = Math.ceil(fontSize * 2.5);
+      buf.width = bsz; buf.height = bsz;
+      const bctx = buf.getContext('2d');
+      bctx.font = `900 ${fontSize}px ${UI_FONT}`;
+      bctx.textAlign = 'center';
+      bctx.textBaseline = 'middle';
+      const bc = bsz / 2;
+
+      bctx.fillStyle = 'rgba(0,0,0,0.15)';
+      bctx.fillText('GO!', bc + 2, bc + 2);
+      bctx.strokeStyle = TITLE_BROWN;
+      bctx.lineWidth = 6;
+      bctx.lineJoin = 'round';
+      bctx.strokeText('GO!', bc, bc);
+      bctx.fillStyle = TITLE_GOLD;
+      bctx.fillText('GO!', bc, bc);
+
       ctx.save();
       ctx.translate(W / 2, H * 0.42);
       ctx.scale(scale, scale);
       ctx.globalAlpha = alpha;
-
-      const fontSize = Math.min(W * 0.2, 100);
-      ctx.font = `900 ${fontSize}px ${UI_FONT}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.fillStyle = 'rgba(0,0,0,0.15)';
-      ctx.fillText('GO!', 2, 2);
-
-      ctx.strokeStyle = TITLE_BROWN;
-      ctx.lineWidth = 6;
-      ctx.lineJoin = 'round';
-      ctx.strokeText('GO!', 0, 0);
-
-      ctx.fillStyle = TITLE_GOLD;
-      ctx.fillText('GO!', 0, 0);
-
+      ctx.drawImage(buf, -bc, -bc);
       ctx.restore();
       ctx.globalAlpha = 1;
     }
@@ -1838,13 +1843,15 @@
       // 캐릭터 이미지 — 작은 캔버스에 그려서 DOM에 표시
       const charCanvas = document.getElementById('resultCharCanvas');
       const mmtImg = getResultMmt(resultMammoth.color);
-      const imgSize = Math.round(bh * 0.50);
-      charCanvas.width = imgSize;
-      charCanvas.height = imgSize;
+      const imgSize = Math.round(bh * 0.65);
+      const dpr = window.devicePixelRatio || 1;
+      charCanvas.width = imgSize * dpr;
+      charCanvas.height = imgSize * dpr;
       charCanvas.style.width = imgSize + 'px';
       charCanvas.style.height = imgSize + 'px';
       if (mmtImg) {
         const cctx = charCanvas.getContext('2d');
+        cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         cctx.clearRect(0, 0, imgSize, imgSize);
         cctx.drawImage(mmtImg, 0, 0, imgSize, imgSize);
       }
@@ -1919,7 +1926,7 @@
       ctx.translate(-zoomCx, -zoomCy);
 
       drawBackground();
-      drawClouds();
+      // drawClouds(); // 산 이미지에 구름 포함되어 있으므로 제거
       drawTrack();
       drawDust();
       const { offL, offR } = drawMammothsAndIndicators(now);
