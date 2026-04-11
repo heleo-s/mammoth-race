@@ -1721,16 +1721,20 @@
     }
 
     // ===== 결과 배너 — 오늘의 매머드 =====
+    function drawResultDim() {
+      if (resultBannerAlpha <= 0 || !resultMammoth) return;
+      ctx.globalAlpha = resultBannerAlpha;
+      ctx.fillStyle = 'rgba(15,30,55,0.45)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
+    }
+
     function drawResultBanner() {
       if (resultBannerAlpha <= 0 || !resultMammoth) {
         return;
       }
 
       ctx.globalAlpha = resultBannerAlpha;
-
-      // 배경 딤
-      ctx.fillStyle = 'rgba(15,30,55,0.45)';
-      ctx.fillRect(0, 0, W, H);
 
 
       const bw = Math.min(W * 0.85, 340);
@@ -1881,6 +1885,7 @@
       drawOffscreen(offR, 'right');
       drawOverlayPanel();
       drawFlash();
+      drawResultDim();
       drawConfetti();
       drawResultBanner();
       drawCountdown(now);
