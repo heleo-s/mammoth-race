@@ -896,8 +896,8 @@
           const nh = img.naturalHeight || img.height;
           return nh * uScale;
         });
-        const overlaps = [200, 200, 200]; // 이미지별 겹침
-        const yOffsets = [48, 70, 74.5]; // 이미지별 y보정
+        const overlaps = [200 * uScale, 200 * uScale, 200 * uScale]; // 이미지별 겹침 (스케일 비례)
+        const yOffsets = [48 * uScale, 70 * uScale, 74.5 * uScale]; // 이미지별 y보정 (스케일 비례)
         const effectiveWidths = widths.map((w, i) => w - overlaps[i % overlaps.length]);
         const cycleW = effectiveWidths.reduce((a, b) => a + b, 0);
         // 출발점보다 앞에서 시작
