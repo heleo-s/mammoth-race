@@ -42,14 +42,6 @@
       from { opacity: 0; transform: translateY(24px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes cloudDrift {
-      from { transform: translateX(-200px); }
-      to { transform: translateX(calc(100vw + 200px)); }
-    }
-    @keyframes mammothWalk {
-      from { transform: translateX(-120px); }
-      to { transform: translateX(calc(100vw + 120px)); }
-    }
     @keyframes rowSlideIn {
       from { opacity: 0; transform: translateX(-16px); }
       to { opacity: 1; transform: translateX(0); }
@@ -361,18 +353,6 @@
     .btn-back-float:hover { filter: brightness(1.07); }
     .btn-back-float:active { transform: translateY(4px); box-shadow: 0 0px 0 var(--btn-red-shadow); }
 
-    .race-timer {
-      background: var(--card);
-      color: var(--ink);
-      border: var(--btn-border);
-      border-radius: 10px;
-      padding: 8px 16px;
-      font-size: 0.85rem;
-      font-weight: 900;
-      font-family: 'Jua', 'Noto Sans KR', sans-serif;
-      letter-spacing: 0.05em;
-      box-shadow: 0 4px 0 var(--outline);
-    }
     .race-canvas-wrap {
       width: 100%;
       max-width: 480px;
@@ -499,7 +479,6 @@
     const ZOOM_MIN = 1.20;         // 최대 줌아웃
     const ZOOM_MAX = 1.60;         // 최대 줌인
     const MAMMOTH_SCALE_MULT = 1.28;
-    const CAMERA_RETARGET_SPEED = 3400;
     const COUNTDOWN_DURATION = 3000;
 
     const UI_FONT = "'Jua', 'Noto Sans KR', sans-serif";
@@ -535,14 +514,10 @@
     let raceStartTime = null;
     let raceRunning = false;
     let raceFinished = false;
-    let racePaused = false;
-    let pausedAt = 0;
-    let pausedTotal = 0;
     let focusRank = 1;
     let cameraX = 0;
     let worldScale = ZOOM_DEFAULT;
     let lastFrameTime = 0;
-    let dustParticles = [];
     let finishOrder = [];
 
     let countdownActive = false;
@@ -676,7 +651,7 @@
 
     function updateDust(dt) {
       for (const m of mammoths) {
-        if (!raceRunning || racePaused || countdownActive) continue;
+        if (!raceRunning || countdownActive) continue;
         if (m.smoothVel < BASE_SPEED * 0.15) continue;
         const slow = m.smoothVel < BASE_SPEED * 0.9;
         const fps = slow ? 6 : 8;
@@ -699,7 +674,7 @@
       const pad = trackH * 0.08;
 
       for (const m of mammoths) {
-        if (!raceRunning || racePaused || countdownActive) continue;
+        if (!raceRunning || countdownActive) continue;
         if (m.smoothVel < BASE_SPEED * 0.15) continue;
         const sx = worldToScreenX(m.x);
         if (sx < -60 || sx > W + 60) continue;
@@ -1120,14 +1095,6 @@
       );
     }
 
-    function shadeColor(c, p) {
-      const n = parseInt(c.replace('#', ''), 16);
-      const r = Math.min(255, Math.max(0, ((n >> 16) & 0xff) + p));
-      const g = Math.min(255, Math.max(0, ((n >> 8) & 0xff) + p));
-      const b = Math.min(255, Math.max(0, (n & 0xff) + p));
-      return `rgb(${r},${g},${b})`;
-    }
-
     // ===== 스프라이트 색상 유틸 =====
     function hexToRgb(hex) {
       const n = parseInt(hex.replace('#', ''), 16);
@@ -1265,7 +1232,7 @@
         // 완전히 벗어나면 드로우 스킵
         if (renderedSx < -dispW || renderedSx > W + dispW) continue;
 
-        const phase = raceRunning && !racePaused && !countdownActive ? (now - raceStartTime - pausedTotal - COUNTDOWN_DURATION) / 1000 + m.index * 0.5 : 0;
+        const phase = raceRunning && !countdownActive ? (now - raceStartTime - COUNTDOWN_DURATION) / 1000 + m.index * 0.5 : 0;
         drawMammoth(sx, ly, m, scale, phase);
 
         // 타겟 매머드 인디케이터
@@ -1483,7 +1450,7 @@
     function drawGoFlash(now) {
       // "GO!" 를 잠깐 보여주는 효과 (카운트다운 종료 직후)
       if (!raceRunning || countdownActive) return;
-      const elapsed = now - raceStartTime - pausedTotal - COUNTDOWN_DURATION;
+      const elapsed = now - raceStartTime - COUNTDOWN_DURATION;
       if (elapsed < 0 || elapsed > 800) return;
 
       const frac = elapsed / 800;
@@ -1530,7 +1497,7 @@
     function initRace(names, colors) {
       const n = names.length;
       if (!n) return;
-      mammoths = []; finishOrder = []; dustParticles = [];
+      mammoths = []; finishOrder = [];
       confettiParticles = []; confettiActive = false;
       resultBannerAlpha = 0; resultBannerTarget = 0;
       resultTriggered = false; resultMammoth = null;
@@ -1570,7 +1537,6 @@
       raceStartTime = performance.now();
       raceRunning = true; raceFinished = false;
       resultTriggered = false; resultMammoth = null;
-      racePaused = false; pausedAt = 0; pausedTotal = 0;
       cameraX = 0;
       worldScale = ZOOM_DEFAULT;
       lastFrameTime = raceStartTime;
@@ -1634,7 +1600,7 @@
         return;
       }
 
-      const elapsed = now - raceStartTime - pausedTotal - COUNTDOWN_DURATION;
+      const elapsed = now - raceStartTime - COUNTDOWN_DURATION;
       if (elapsed < 0) { lastFrameTime = now; return; }
 
       const dt = Math.min(now - lastFrameTime, 50);
@@ -1766,10 +1732,6 @@
     }
 
     // ===== 결과 배너 — 전체 DOM =====
-    function drawResultDim() {
-      // DOM 딤으로 통합 — drawResultBanner에서 제어
-    }
-
     function drawResultBanner() {
       if (resultBannerAlpha <= 0 || !resultMammoth) return;
 
@@ -1835,48 +1797,6 @@
       nameEl.style.fontSize = Math.min(bw * 0.1, 30) + 'px';
     }
 
-    function drawPausedOverlay() {
-      if (!racePaused) return;
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
-      ctx.fillRect(0, 0, W, H);
-
-      const fs = Math.min(W * 0.08, 36);
-      ctx.font = `900 ${fs}px ${UI_FONT}`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-
-      ctx.fillStyle = 'rgba(255,255,255,0.15)';
-      ctx.fillText('PAUSED', W / 2 + 2, H * 0.5 + 2);
-      ctx.fillStyle = TITLE_GOLD;
-      ctx.fillText('PAUSED', W / 2, H * 0.5);
-      ctx.strokeStyle = TITLE_BROWN;
-      ctx.lineWidth = 3;
-      ctx.strokeText('PAUSED', W / 2, H * 0.5);
-    }
-
-    // ===== 타이머 업데이트 =====
-    function updateTimerDisplay(now) {
-      const timerEl = document.getElementById('raceTimer');
-      if (!raceRunning && !raceFinished) { timerEl.textContent = '00:00.0'; return; }
-
-      let elapsed;
-      if (countdownActive) {
-        const cdElapsed = now - countdownStart;
-        const remaining = Math.max(0, COUNTDOWN_DURATION - cdElapsed);
-        const sec = Math.ceil(remaining / 1000);
-        timerEl.textContent = sec > 0 ? `-${sec}` : '00:00.0';
-        return;
-      }
-
-      elapsed = now - raceStartTime - pausedTotal - COUNTDOWN_DURATION;
-      if (racePaused) elapsed = pausedAt - raceStartTime - pausedTotal - COUNTDOWN_DURATION;
-      if (elapsed < 0) elapsed = 0;
-
-      const totalSec = elapsed / 1000;
-      const min = Math.floor(totalSec / 60);
-      const sec = Math.floor(totalSec % 60);
-      const dec = Math.floor((totalSec % 1) * 10);
-      timerEl.textContent = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}.${dec}`;
-    }
 
     function render(now) {
       ctx.clearRect(0, 0, W, H);
@@ -1902,7 +1822,6 @@
       drawOffscreen(offR, 'right');
       drawOverlayPanel();
       drawFlash();
-      drawResultDim();
       drawConfetti();
       drawResultBanner();
       drawCountdown(now);
@@ -2142,7 +2061,7 @@
     function showSetupScreen() {
       raceScreen.classList.remove('active');
       setupScreen.classList.remove('hidden');
-      raceRunning = false; racePaused = false;
+      raceRunning = false;
       countdownActive = false;
     }
 
