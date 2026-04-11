@@ -1427,9 +1427,11 @@
       const scale = 0.6 + frac * 0.8;
       const alpha = Math.min(1, frac * 2.5);
 
+      const dpr = window.devicePixelRatio || 1;
       const fontSize = Math.min(W * 0.25, 120);
       const bsz = Math.ceil(fontSize * 2.5);
-      _textBuf.width = bsz; _textBuf.height = bsz;
+      _textBuf.width = bsz * dpr; _textBuf.height = bsz * dpr;
+      _textBufCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       _textBufCtx.font = `900 ${fontSize}px ${UI_FONT}`;
       _textBufCtx.textAlign = 'center';
       _textBufCtx.textBaseline = 'middle';
@@ -1448,7 +1450,7 @@
       ctx.translate(W / 2, H * 0.42);
       ctx.scale(scale, scale);
       ctx.globalAlpha = alpha;
-      ctx.drawImage(_textBuf, -bc, -bc);
+      ctx.drawImage(_textBuf, 0, 0, bsz * dpr, bsz * dpr, -bc, -bc, bsz, bsz);
       ctx.restore();
       ctx.globalAlpha = 1;
     }
@@ -1463,9 +1465,11 @@
       const alpha = 1 - frac;
       const scale = 1 + frac * 0.3;
 
+      const dpr = window.devicePixelRatio || 1;
       const fontSize = Math.min(W * 0.2, 100);
       const bsz = Math.ceil(fontSize * 2.5);
-      _textBuf.width = bsz; _textBuf.height = bsz;
+      _textBuf.width = bsz * dpr; _textBuf.height = bsz * dpr;
+      _textBufCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       _textBufCtx.font = `900 ${fontSize}px ${UI_FONT}`;
       _textBufCtx.textAlign = 'center';
       _textBufCtx.textBaseline = 'middle';
@@ -1484,7 +1488,7 @@
       ctx.translate(W / 2, H * 0.42);
       ctx.scale(scale, scale);
       ctx.globalAlpha = alpha;
-      ctx.drawImage(_textBuf, -bc, -bc);
+      ctx.drawImage(_textBuf, 0, 0, bsz * dpr, bsz * dpr, -bc, -bc, bsz, bsz);
       ctx.restore();
       ctx.globalAlpha = 1;
     }
