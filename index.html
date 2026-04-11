@@ -621,8 +621,8 @@
     }
 
     // ===== 더스트 FX (스프라이트 시트 기반) =====
-    // fx_sheet_alpha: 6열 × 4행, 3행=보통속도, 4행=느린속도
-    // dust_fx_reference_alpha: 2행 × 6열 (12프레임), 2~6번 좌우반전
+    // fx_sheet_alpha: 6열 × 4행, 3행=보통속도, 4행=느린속도 (상단 12% 타이틀 영역)
+    // dust_fx_reference_alpha: 11프레임, 수동 좌표 기반, 2~6번 좌우반전
     const FX_COLS = 6;
     const FX_ROWS = 4;
     const FX_TITLE_RATIO = 0.12; // 상단 타이틀 영역 비율
@@ -633,8 +633,7 @@
     // 4행은 균일 간격으로 충분
 
     const BURST_FX_TOTAL = 11;
-    // 급가속 FX 수동 좌표 [x, y, w, h] — sprint_sprites.json 기준
-    // 순서: sprite18→13→7→5→3→2→29→30→32→39→46
+    // 급가속 FX 수동 좌표 [x, y, w, h]
     const BURST_FRAMES = [
       [46,  533, 96,  35],  // 1 (sprite18)
       [179, 503, 104, 66],  // 2 (sprite13)
@@ -821,7 +820,6 @@
     function drawBackground() {
       const { tTop, tBot } = getTrackBounds();
 
-      // 하늘 그라데이션
       // 하늘 그라데이션
       const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
       skyGrad.addColorStop(0, '#5aa8e6');
@@ -1036,8 +1034,7 @@
       }
     }
 
-    // ===== 매머드 =====
-    // ===== 스프라이트 설정 =====
+    // ===== 매머드 스프라이트 =====
     const SPRITE_COLS = 4;
     const SPRITE_ROWS = 2;
     const SPRITE_FRAME_TOTAL = SPRITE_COLS * SPRITE_ROWS;
@@ -1166,7 +1163,7 @@
       return oc;
     }
 
-    // ===== 결과 캐릭터 (크로마키 + 틴팅) =====
+    // ===== 결과 캐릭터 (틴팅) =====
     const resultMmtCache = {};
     function getResultMmt(color) {
       if (resultMmtCache[color]) return resultMmtCache[color];
