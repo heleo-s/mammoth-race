@@ -429,7 +429,7 @@
       ">
         <div id="rankCard" style="
           background:#f0f8ff; border:3px solid #1f3650; border-radius:10px;
-          box-shadow:0 4px 0 #1f3650; overflow:hidden;
+          box-shadow:0 4px 0 #1f3650; overflow:hidden; position:relative;
         ">
           <div id="rankRows"></div>
         </div>
@@ -1389,6 +1389,7 @@
         const isFocus = rank === focusRank;
         const row = rankRows.children[i];
         row.style.height = rowH + 'px';
+        row.style.width = (rankW - 12) + 'px';
         row.style.background = isFocus ? 'rgba(90,181,240,0.22)' : 'transparent';
         const [sNum, chip, sName, sDist] = row.children;
         sNum.textContent = rank;
