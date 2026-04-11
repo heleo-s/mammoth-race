@@ -1161,9 +1161,10 @@
       ctx.fillStyle = '#f06060';
       ctx.fillRect(tx + tiw - 2, ty - 7, 3, 14);
 
-      // 카메라 뷰 범위
+      // 카메라 뷰 범위 (줌 반영)
+      const viewW = W / (BASE_WORLD_SCALE * worldScale);
       const cs = Math.max(0, cameraX / TRACK_LENGTH);
-      const ce = Math.min(1, (cameraX + W * 0.6) / TRACK_LENGTH);
+      const ce = Math.min(1, (cameraX + viewW) / TRACK_LENGTH);
       const cx1 = tx + tiw * cs, cx2 = tx + tiw * ce;
       ctx.fillStyle = 'rgba(90,181,240,0.18)';
       ctx.fillRect(cx1, ty - 7, cx2 - cx1, 14);
