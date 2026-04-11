@@ -424,7 +424,7 @@
   <!-- ===== 레이스 화면 ===== -->
   <div class="race-screen" id="raceScreen">
     <div class="race-canvas-wrap" id="canvasWrap">
-      <canvas id="raceCanvas"></canvas>
+      <canvas id="raceCanvas" style="position:relative;"></canvas>
       <button class="btn-back-float" id="backBtn">&#8592;</button>
       <div id="rankingOverlay" style="
         display:none; position:absolute; left:0; top:0;
@@ -1553,6 +1553,7 @@
       document.getElementById('resultNameOverlay').style.display = 'none';
       document.getElementById('resultDimOverlay').style.display = 'none';
       document.getElementById('rankingOverlay').style.display = 'none';
+      canvas.style.zIndex = '';
       flashAlpha = 0;
       const lc = Math.min(LANE_COUNT, n);
       lastNames = [...names];
@@ -1863,6 +1864,8 @@
       const dimEl = document.getElementById('resultDimOverlay');
       dimEl.style.display = 'block';
       dimEl.style.opacity = resultBannerAlpha;
+      // 캔버스를 순위표 DOM 위로 올려서 결과 카드가 가려지지 않도록
+      canvas.style.zIndex = '10';
       nameEl.textContent = resultMammoth.name;
       nameEl.style.fontSize = nameFs + 'px';
       nameEl.style.top = (by + bh * 0.88 - nameFs * 0.55) + 'px';
