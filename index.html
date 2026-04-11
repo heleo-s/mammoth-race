@@ -558,7 +558,7 @@
     // ===== SVG image asset loader =====
     const ASSET_BASE = 'assets/';
     const SVG_ASSET_NAMES = [];
-    const PNG_ASSET_NAMES = ['running_mammoth_sprite_sheet', 'snowy_track', 'result_mmt', 'fx_sheet_alpha', 'dust_fx_reference_alpha', 'middle_1', 'middle_2', 'middle_3'];
+    const PNG_ASSET_NAMES = ['running_mammoth_sprite_sheet', 'snowy_track', 'result_mmt', 'fx_sheet_alpha', 'dust_fx_reference_alpha', 'middle_1', 'middle_2', 'middle_3', 'far_1', 'far_2', 'far_3', 'far_4'];
     const assets = {};
     let assetsLoaded = false;
 
@@ -873,6 +873,82 @@
       skyGrad.addColorStop(1, '#f5fcff');
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, W, H * 0.42);
+
+      // 산 원경 — far_1~4 랜덤 겹침 배치
+      const mtImgs = [assets['far_1'], assets['far_2'], assets['far_3'], assets['far_4']].filter(
+        img => img && (img.naturalWidth || img.width)
+      );
+      if (mtImgs.length > 0) {
+        const mtParallax = 0.04;
+        const mtH = H * 0.18;
+        const mtBottom = tTop - H * 0.08;
+        const mtMaxNH = Math.max(...mtImgs.map(img => img.naturalHeight || img.height));
+        const mtScale = mtH / mtMaxNH;
+        const mtOffset = cameraX * mtParallax;
+
+        // 시드 기반 의사 랜덤으로 산 순서/겹침 결정
+        function seededRand(seed) {
+          let s = seed % 2147483647;
+          if (s <= 0) s += 2147483646;
+          s = (s * 16807) % 2147483647;
+          return (s - 1) / 2147483646;
+        }
+
+        // 산 폭 계산
+        const mtWidths = mtImgs.map(img => (img.naturalWidth || img.width) * mtScale);
+        const avgW = mtWidths.reduce((a, b) => a + b, 0) / mtWidths.length;
+        const mtOverlap = avgW * 0.35; // 35% 겹침
+
+        let mx = -(mtOffset % (avgW * 8)) - avgW * 4;
+        let seed = 12345;
+        while (mx < W + avgW * 2) {
+          seed++;
+          const r = seededRand(seed);
+          const i = Math.floor(seededRand(seed * 3 + 7) * mtImgs.length);
+          const img = mtImgs[i];
+          const w = mtWidths[i];
+          const h = (img.naturalHeight || img.height) * mtScale;
+          const yJitter = seededRand(seed * 5 + 13) * mtH * 0.08;
+          ctx.drawImage(img, mx, mtBottom - h + yJitter, w, h);
+          mx += w - mtOverlap;
+        }
+      }
+
+      // 원경 — 같은 이미지 작게, 느린 패럴렉스
+      const farImgs = [assets['middle_1'], assets['middle_2'], assets['middle_3']].filter(
+        img => img && (img.naturalWidth || img.width)
+      );
+      if (farImgs.length > 0) {
+        const farH = H * 0.40;
+        const farY = tTop - farH * 0.8;
+        const farParallax = 0.2;
+
+        const farMaxNH = Math.max(...farImgs.map(img => img.naturalHeight || img.height));
+        const farScale = farH / farMaxNH;
+        const farBottom = farY + farH;
+        const farWidths = farImgs.map(img => (img.naturalWidth || img.width) * farScale);
+        const farHeights = farImgs.map(img => (img.naturalHeight || img.height) * farScale);
+        const farRawOverlaps = [650, 650, 650];
+        const farRawYOffsets = [99, 150, 155];
+        const farOverlaps = farRawOverlaps.map(v => v * farScale);
+        const farYOffsets = farRawYOffsets.map(v => v * farScale);
+        const farEffW = farWidths.map((w, i) => w - farOverlaps[i]);
+        const farCycleW = farEffW.reduce((a, b) => a + b, 0);
+        const farOffset = cameraX * farParallax;
+        const farHead = farWidths[0] * 2;
+        let fx = -(farOffset % farCycleW) - farCycleW - farHead;
+        let fi = 0;
+        while (fx < W + farCycleW + farHead) {
+          const i = fi % farImgs.length;
+          ctx.drawImage(farImgs[i], fx, farBottom - farHeights[i] + farYOffsets[i], farWidths[i], farHeights[i]);
+          fx += farWidths[i] - farOverlaps[i];
+          fi++;
+        }
+        // 포그 — 원경 건물 위에 반투명 안개
+        ctx.fillStyle = 'rgba(220, 235, 245, 0.4)';
+        ctx.fillRect(0, farY, W, farH);
+        ctx.globalAlpha = 1;
+      }
 
       // 중경 — middle_1, 2, 3 순차 반복 (울타리 뒤편)
       const middleImgs = [assets['middle_1'], assets['middle_2'], assets['middle_3']].filter(
