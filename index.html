@@ -1413,6 +1413,10 @@
         sNum.style.color = rank <= 3 ? '#c8920a' : '#1f3650';
         chip.style.background = m.color;
         sName.textContent = m.name;
+        sName.style.minWidth = '0';
+        sName.style.overflow = 'hidden';
+        sName.style.textOverflow = 'ellipsis';
+        sName.style.flex = '1';
         sDist.textContent = isFinished ? 'FINISH' : `${toMeters(m.x)}m`;
         sDist.style.color = isFinished ? '#c8920a' : 'rgba(31,54,80,0.5)';
       });
