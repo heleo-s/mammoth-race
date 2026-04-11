@@ -660,8 +660,10 @@
     function spawnDust() {} // 호환용 빈 함수
     function updateDust(dt) {
       for (const m of mammoths) {
-        if (m.finished || !raceRunning || racePaused || countdownActive) continue;
-        const fps = 8;
+        if (!raceRunning || racePaused || countdownActive) continue;
+        if (m.smoothVel < BASE_SPEED * 0.15) continue;
+        const slow = m.smoothVel < BASE_SPEED * 0.9;
+        const fps = slow ? 6 : 8;
         m.dustFrame = (m.dustFrame + fps * dt / 1000) % FX_COLS;
 
         if (m.burstTimer > 0 && m.burstFrame < 0) {
@@ -681,15 +683,16 @@
       const pad = trackH * 0.08;
 
       for (const m of mammoths) {
-        if (m.finished || !raceRunning) continue;
+        if (!raceRunning || racePaused || countdownActive) continue;
+        if (m.smoothVel < BASE_SPEED * 0.15) continue;
         const sx = worldToScreenX(m.x);
         if (sx < -60 || sx > W + 60) continue;
         const ly = tTop + pad + m.z * (trackH - pad * 2);
         const scale = (0.62 + m.z * 0.18) * MAMMOTH_SCALE_MULT;
         const dispH = SPRITE_BASE_H * scale;
 
-        // 일반 주행 FX
-        if (fxImg && fxImg.naturalWidth) {
+        // 일반 주행 FX (버스트 중엔 스킵)
+        if (m.burstFrame < 0 && fxImg && fxImg.naturalWidth) {
           const fw = fxImg.naturalWidth / FX_COLS;
           const titleH = fxImg.naturalHeight * FX_TITLE_RATIO;
           const fh = (fxImg.naturalHeight - titleH) / FX_ROWS;
@@ -697,16 +700,22 @@
           const slow = m.smoothVel < BASE_SPEED * 0.9;
           const row = slow ? 3 : 2;
           const srcY = titleH + row * fh;
+          // 3행(row=2) 1번 프레임 보정: 왼쪽으로 넘침 → 소스 넓혀서 포함
+          const extraW = (row === 2 && fi === 0) ? fw * 0.15 : 0;
+          const srcX = fi * fw - extraW;
           const drawSize = (slow ? 18 : 26) * scale;
           // 프레임별 x오프셋: 먼지구름 중심이 뒤로 퍼지는 형태에 맞춤
           const frameOffsets = [0, 0, 0, 0.4, 0.7, 1.0]; // fi 0~5
           const trailOffset = frameOffsets[fi] * drawSize;
 
           ctx.save();
-          ctx.translate(sx - dispH * 0.3 - trailOffset, ly + dispH * 0.15);
+          // 발끝 위치: 그림자 y = ly + dispH*0.29, 뒷발 x = sx - dispW*0.35
+          const dispW2 = dispH * 1.2;
+          ctx.translate(sx - dispW2 * 0.35 - 7 - trailOffset, ly + dispH * 0.29 - 6);
           ctx.scale(-1, 1);
-          ctx.drawImage(fxImg, fi * fw, srcY, fw, fh,
-            -drawSize, -drawSize * 0.5, drawSize, drawSize);
+          const renderW = drawSize * (1 + extraW / fw);
+          ctx.drawImage(fxImg, srcX, srcY, fw + extraW, fh,
+            -renderW, -drawSize * 0.5, renderW, drawSize);
           ctx.restore();
         }
 
@@ -722,7 +731,8 @@
             const drawSize = 36 * scale;
 
             ctx.save();
-            ctx.translate(sx - dispH * 0.35, ly + dispH * 0.1);
+            const dispW3 = dispH * 1.2;
+            ctx.translate(sx - dispW3 * 0.35 - 7, ly + dispH * 0.29 - 6);
             if (needFlip) {
               ctx.scale(1, 1); // 원본이 왼쪽향이라 반전하면 오른쪽(뒤쪽)
             } else {

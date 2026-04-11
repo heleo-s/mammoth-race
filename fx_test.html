@@ -98,12 +98,16 @@
     fxCtx.fillText('▼ foot', footX, 38);
     fxCtx.textAlign = 'left';
 
+    // 3행(row=2) 1번 프레임 보정
+    const extraW = (row === 2 && fi === 0) ? fw * 0.15 : 0;
+    const srcX = fi * fw - extraW;
+    const renderW = size * (1 + extraW / fw);
+
     fxCtx.save();
-    // 좌우반전 기준: 이미지 오른쪽 끝이 발끝에 닿도록
     fxCtx.translate(footX - trail, cy);
     if (flip) fxCtx.scale(-1, 1);
-    fxCtx.drawImage(fxImg, fi * fw, srcY, fw, fh,
-      flip ? 0 : -size, -size / 2, size, size);
+    fxCtx.drawImage(fxImg, srcX, srcY, fw + extraW, fh,
+      flip ? 0 : -renderW, -size / 2, renderW, size);
     fxCtx.restore();
 
     fxFrame += fps / 60;
@@ -170,8 +174,11 @@
       frCtx.font = '12px monospace';
       frCtx.fillText('fx_sheet row 3 (보통):', 10, 15);
       for (let i = 0; i < FX_COLS; i++) {
-        frCtx.drawImage(fxImg, i * fw, titleH + 2 * fh, fw, fh,
-          10 + i * (tileSize + 8), 22, tileSize, tileSize);
+        const ex = (i === 0) ? fw * 0.15 : 0;
+        const sx = i * fw - ex;
+        const rw = tileSize * (1 + ex / fw);
+        frCtx.drawImage(fxImg, sx, titleH + 2 * fh, fw + ex, fh,
+          10 + i * (tileSize + 8), 22, rw, tileSize);
         frCtx.fillStyle = '#888';
         frCtx.fillText(`${i + 1}`, 10 + i * (tileSize + 8) + tileSize / 2 - 4, 22 + tileSize + 14);
         frCtx.fillStyle = '#ccc';
