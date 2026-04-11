@@ -355,7 +355,7 @@
       color: #fff;
       font-size: 18px;
       cursor: pointer;
-      z-index: 20;
+      z-index: 60;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -429,6 +429,10 @@
       <div id="rankingOverlay" style="
         display:none; position:absolute; left:0; top:0;
         pointer-events:none; z-index:5;
+      "></div>
+      <div id="resultDimOverlay" style="
+        display:none; position:absolute; left:0; top:0; width:100%; height:100%;
+        background:rgba(15,30,55,0.45); pointer-events:none; z-index:8;
       "></div>
       <div id="resultNameOverlay" style="
         display:none; position:absolute; left:0; top:0; width:100%; height:100%;
@@ -1484,6 +1488,7 @@
       resultBannerAlpha = 0; resultBannerTarget = 0;
       resultTriggered = false; resultMammoth = null;
       document.getElementById('resultNameOverlay').style.display = 'none';
+      document.getElementById('resultDimOverlay').style.display = 'none';
       document.getElementById('rankingOverlay').style.display = 'none';
       flashAlpha = 0;
       const lc = Math.min(LANE_COUNT, n);
@@ -1720,8 +1725,6 @@
       if (resultBannerAlpha <= 0 || !resultMammoth) {
         return;
       }
-      // 결과창이 뜰 때 순위표 DOM 숨기기
-      document.getElementById('rankingOverlay').style.display = 'none';
 
       ctx.globalAlpha = resultBannerAlpha;
 
@@ -1789,6 +1792,9 @@
       const overlayEl = document.getElementById('resultNameOverlay');
       overlayEl.style.display = 'block';
       overlayEl.style.opacity = resultBannerAlpha;
+      const dimEl = document.getElementById('resultDimOverlay');
+      dimEl.style.display = 'block';
+      dimEl.style.opacity = resultBannerAlpha;
       nameEl.textContent = resultMammoth.name;
       nameEl.style.fontSize = nameFs + 'px';
       nameEl.style.top = (by + bh * 0.88 - nameFs * 0.55) + 'px';
