@@ -51,6 +51,9 @@
   burstImg.src = ASSET_BASE + 'dust_fx_reference_alpha.png';
 
   const FX_COLS = 6, FX_ROWS = 4, FX_TITLE = 0.12;
+  const FX_ROW3_FRAMES = [
+    [0, 260], [260, 220], [480, 220], [700, 220], [920, 220], [1140, 236]
+  ];
   const SPRITE_COLS = 4, SPRITE_ROWS = 2;
   const mammothImg = new Image();
   mammothImg.src = ASSET_BASE + 'running_mammoth_sprite_sheet.png';
@@ -104,11 +107,15 @@
     fxCtx.fillText('▼ foot', footX, 38);
     fxCtx.textAlign = 'left';
 
-    // 메인과 동일: pad 1px, extraW 보정
-    const pad = 1;
-    const extraW = (row === 2 && fi === 0) ? Math.round(fw * 0.15) : 0;
-    const srcX = fi * fw - extraW + pad;
-    const srcW = fw + extraW - pad * 2;
+    let srcX, srcW;
+    if (row === 2) {
+      srcX = FX_ROW3_FRAMES[fi][0];
+      srcW = FX_ROW3_FRAMES[fi][1];
+    } else {
+      const pad = 1;
+      srcX = fi * fw + pad;
+      srcW = fw - pad * 2;
+    }
     const renderW = size * (srcW / fw);
 
     fxCtx.save();
@@ -183,9 +190,8 @@
       frCtx.font = '12px monospace';
       frCtx.fillText('fx_sheet row 3 (보통):', 10, 15);
       for (let i = 0; i < FX_COLS; i++) {
-        const ex = (i === 0) ? Math.round(fw * 0.15) : 0;
-        const sx = i * fw - ex + pad;
-        const sw = fw + ex - pad * 2;
+        const sx = FX_ROW3_FRAMES[i][0];
+        const sw = FX_ROW3_FRAMES[i][1];
         const rw = tileSize * (sw / fw);
         frCtx.drawImage(fxImg, sx, titleH + 2 * fh, sw, fh,
           10 + i * (tileSize + 8), 22, rw, tileSize);
@@ -196,9 +202,10 @@
 
       frCtx.fillText('fx_sheet row 4 (느림):', 10, 110);
       for (let i = 0; i < FX_COLS; i++) {
-        const sx = i * fw + pad;
-        const sw = fw - pad * 2;
-        frCtx.drawImage(fxImg, sx, titleH + 3 * fh, sw, fh,
+        const pad = 1;
+        const sx4 = i * fw + pad;
+        const sw4 = fw - pad * 2;
+        frCtx.drawImage(fxImg, sx4, titleH + 3 * fh, sw4, fh,
           10 + i * (tileSize + 8), 117, tileSize, tileSize);
         frCtx.fillStyle = '#888';
         frCtx.fillText(`${i + 1}`, 10 + i * (tileSize + 8) + tileSize / 2 - 4, 117 + tileSize + 14);

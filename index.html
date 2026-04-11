@@ -725,8 +725,8 @@
 
           ctx.save();
           const dispW2 = dispH * 1.2;
-          const fxOffX = slow ? -10 : -14;
-          const fxOffY = -6;
+          const fxOffX = (slow ? -10 : -14) * scale;
+          const fxOffY = -6 * scale;
           ctx.translate(sx - dispW2 * 0.35 + fxOffX - trailOffset, ly + dispH * 0.29 + fxOffY);
           ctx.scale(-1, 1);
           const baseW = Math.floor(fxImg.naturalWidth / FX_COLS);
@@ -749,7 +749,7 @@
 
             ctx.save();
             const dispW3 = dispH * 1.2;
-            ctx.translate(sx - dispW3 * 0.35 + 12, ly + dispH * 0.29 - 6);
+            ctx.translate(sx - dispW3 * 0.35 + 12 * scale, ly + dispH * 0.29 - 6 * scale);
             if (needFlip) {
               ctx.scale(1, 1); // 원본이 왼쪽향이라 반전하면 오른쪽(뒤쪽)
             } else {
