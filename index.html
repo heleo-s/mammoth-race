@@ -1388,15 +1388,15 @@
       // 행 확보
       while (rankRows.children.length < ranking.length) {
         const row = document.createElement('div');
-        row.style.cssText = `display:flex;align-items:center;padding:0 6px;box-sizing:border-box;width:100%;height:${rowH}px;font-weight:900;font-size:${Math.round(11*rankScale)}px;white-space:nowrap;border-radius:${Math.round(5*rankScale)}px;overflow:hidden;`;
+        row.style.cssText = `display:flex;align-items:center;padding:0 6px;box-sizing:border-box;width:100%;max-width:100%;height:${rowH}px;font-weight:900;font-size:${Math.round(11*rankScale)}px;border-radius:${Math.round(5*rankScale)}px;overflow:hidden;`;
         const chip = document.createElement('div');
         chip.style.cssText = `width:${Math.round(8*rankScale)}px;height:${Math.round(8*rankScale)}px;border-radius:50%;border:1px solid #1f3650;flex-shrink:0;margin-left:${Math.round(5*rankScale)}px;`;
         const sNum = document.createElement('span');
         sNum.style.cssText = `width:${Math.round(12*rankScale)}px;text-align:right;flex-shrink:0;margin-left:-2px;`;
         const sName = document.createElement('span');
-        sName.style.cssText = `flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;margin-left:${Math.round(6*rankScale)}px;color:#1f3650;`;
+        sName.style.cssText = `flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:${Math.round(6*rankScale)}px;color:#1f3650;`;
         const sDist = document.createElement('span');
-        sDist.style.cssText = `text-align:right;font-size:${Math.round(10*rankScale)}px;margin-left:${Math.round(4*rankScale)}px;flex-shrink:0;`;
+        sDist.style.cssText = `text-align:right;font-size:${Math.round(10*rankScale)}px;margin-left:${Math.round(4*rankScale)}px;white-space:nowrap;`;
         row.appendChild(sNum); row.appendChild(chip); row.appendChild(sName); row.appendChild(sDist);
         rankRows.appendChild(row);
       }
