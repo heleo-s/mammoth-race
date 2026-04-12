@@ -1297,8 +1297,8 @@
     // ===== 미니맵 + 순위 오버레이 =====
     function drawOverlayPanel() {
       const pad = 8;
-      const btnSpace = 40 + 14; // 뒤로가기 버튼(40) + right(10) + gap(4)
-      const panelW = Math.min(W - btnSpace - pad, 400);
+      const btnSpace = 40 + 10 + 10; // 뒤로가기 버튼(40) + right(10) + gap(10)
+      const panelW = W - btnSpace - pad;
       const miniH = 38;
       const x = pad, y = 10;
       const r = 10;
