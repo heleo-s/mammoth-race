@@ -404,6 +404,11 @@
     <div class="race-canvas-wrap" id="canvasWrap">
       <canvas id="raceCanvas"></canvas>
       <button class="btn-back-float" id="backBtn"><span style="display:block;width:14px;height:14px;background:#1f3650;border-radius:2px;"></span></button>
+      <!-- 카운트다운 DOM 캔버스 (z:7) -->
+      <canvas id="countdownCanvas" style="
+        display:none; position:absolute; left:0; top:0;
+        pointer-events:none; z-index:7;
+      "></canvas>
       <!-- 순위표 DOM -->
       <div id="rankPanel" style="
         display:none; position:absolute; pointer-events:none; z-index:5;
@@ -1419,29 +1424,24 @@
       countdownCallback = callback;
     }
 
-    function drawCountdown(now) {
-      if (!countdownActive) return;
-      const elapsed = now - countdownStart;
-      if (elapsed >= COUNTDOWN_DURATION) {
-        countdownActive = false;
-        if (countdownCallback) countdownCallback();
-        return;
-      }
-
-      const remaining = COUNTDOWN_DURATION - elapsed;
-      const sec = Math.ceil(remaining / 1000);
-      const frac = (remaining % 1000) / 1000; // 1→0 within each second
-
-      let text;
-      if (sec >= 1) text = String(sec);
-      if (!text) return;
-
-      // 숫자 scale 애니메이션: 시작 크게 → 끝 작게
-      const scale = 0.6 + frac * 0.8;
-      const alpha = Math.min(1, frac * 2.5);
-
+    function _ensureCountdownCanvas() {
+      const cc = document.getElementById('countdownCanvas');
       const dpr = window.devicePixelRatio || 1;
-      const fontSize = Math.min(W * 0.25, 120);
+      if (cc.width !== W * dpr || cc.height !== H * dpr) {
+        cc.width = W * dpr;
+        cc.height = H * dpr;
+        cc.style.width = W + 'px';
+        cc.style.height = H + 'px';
+      }
+      return cc;
+    }
+
+    function _drawTextOnCountdown(cc, text, fontSize, scale, alpha) {
+      const dpr = window.devicePixelRatio || 1;
+      const cctx = cc.getContext('2d');
+      cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // 오프스크린 버퍼에 불투명으로 그리기 (fill/stroke 믹싱 방지)
       const bsz = Math.ceil(fontSize * 2.5);
       _textBuf.width = bsz * dpr; _textBuf.height = bsz * dpr;
       _textBufCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1449,7 +1449,6 @@
       _textBufCtx.textAlign = 'center';
       _textBufCtx.textBaseline = 'middle';
       const bc = bsz / 2;
-
       _textBufCtx.fillStyle = 'rgba(0,0,0,0.2)';
       _textBufCtx.fillText(text, bc + 2, bc + 2);
       _textBufCtx.strokeStyle = TITLE_BROWN;
@@ -1459,51 +1458,68 @@
       _textBufCtx.fillStyle = TITLE_GOLD;
       _textBufCtx.fillText(text, bc, bc);
 
-      ctx.save();
-      ctx.translate(W / 2, H * 0.42);
-      ctx.scale(scale, scale);
-      ctx.globalAlpha = alpha;
-      ctx.drawImage(_textBuf, 0, 0, bsz * dpr, bsz * dpr, -bc, -bc, bsz, bsz);
-      ctx.restore();
-      ctx.globalAlpha = 1;
+      cctx.save();
+      cctx.translate(W / 2, H * 0.42);
+      cctx.scale(scale, scale);
+      cctx.globalAlpha = alpha;
+      cctx.drawImage(_textBuf, 0, 0, bsz * dpr, bsz * dpr, -bc, -bc, bsz, bsz);
+      cctx.restore();
+    }
+
+    function drawCountdown(now) {
+      const cc = document.getElementById('countdownCanvas');
+      if (!countdownActive) {
+        cc.style.display = 'none';
+        return;
+      }
+      const elapsed = now - countdownStart;
+      if (elapsed >= COUNTDOWN_DURATION) {
+        countdownActive = false;
+        cc.style.display = 'none';
+        if (countdownCallback) countdownCallback();
+        return;
+      }
+
+      const remaining = COUNTDOWN_DURATION - elapsed;
+      const sec = Math.ceil(remaining / 1000);
+      const frac = (remaining % 1000) / 1000;
+      let text;
+      if (sec >= 1) text = String(sec);
+      if (!text) { cc.style.display = 'none'; return; }
+
+      const scale = 0.6 + frac * 0.8;
+      const alpha = Math.min(1, frac * 2.5);
+
+      _ensureCountdownCanvas();
+      cc.style.display = 'block';
+      const dpr = window.devicePixelRatio || 1;
+      const cctx = cc.getContext('2d');
+      cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cctx.clearRect(0, 0, W, H);
+
+      const fontSize = Math.min(W * 0.25, 120);
+      _drawTextOnCountdown(cc, text, fontSize, scale, alpha);
     }
 
     function drawGoFlash(now) {
-      // "GO!" 를 잠깐 보여주는 효과 (카운트다운 종료 직후)
-      if (!raceRunning || countdownActive) return;
+      const cc = document.getElementById('countdownCanvas');
+      if (!raceRunning || countdownActive) { return; }
       const elapsed = now - raceStartTime - COUNTDOWN_DURATION;
-      if (elapsed < 0 || elapsed > 800) return;
+      if (elapsed < 0 || elapsed > 800) { cc.style.display = 'none'; return; }
 
       const frac = elapsed / 800;
       const alpha = 1 - frac;
       const scale = 1 + frac * 0.3;
 
+      _ensureCountdownCanvas();
+      cc.style.display = 'block';
       const dpr = window.devicePixelRatio || 1;
+      const cctx = cc.getContext('2d');
+      cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cctx.clearRect(0, 0, W, H);
+
       const fontSize = Math.min(W * 0.2, 100);
-      const bsz = Math.ceil(fontSize * 2.5);
-      _textBuf.width = bsz * dpr; _textBuf.height = bsz * dpr;
-      _textBufCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      _textBufCtx.font = `900 ${fontSize}px ${UI_FONT}`;
-      _textBufCtx.textAlign = 'center';
-      _textBufCtx.textBaseline = 'middle';
-      const bc = bsz / 2;
-
-      _textBufCtx.fillStyle = 'rgba(0,0,0,0.15)';
-      _textBufCtx.fillText('GO!', bc + 2, bc + 2);
-      _textBufCtx.strokeStyle = TITLE_BROWN;
-      _textBufCtx.lineWidth = 6;
-      _textBufCtx.lineJoin = 'round';
-      _textBufCtx.strokeText('GO!', bc, bc);
-      _textBufCtx.fillStyle = TITLE_GOLD;
-      _textBufCtx.fillText('GO!', bc, bc);
-
-      ctx.save();
-      ctx.translate(W / 2, H * 0.42);
-      ctx.scale(scale, scale);
-      ctx.globalAlpha = alpha;
-      ctx.drawImage(_textBuf, 0, 0, bsz * dpr, bsz * dpr, -bc, -bc, bsz, bsz);
-      ctx.restore();
-      ctx.globalAlpha = 1;
+      _drawTextOnCountdown(cc, 'GO!', fontSize, scale, alpha);
     }
 
     // ===== 1등 결승 플래시 =====
@@ -1525,6 +1541,7 @@
       resultBannerEl.style.display = 'none';
       resultDimEl.style.display = 'none';
       document.getElementById('confettiCanvas').style.display = 'none';
+      document.getElementById('countdownCanvas').style.display = 'none';
       rankPanelEl.style.display = 'none';
       rankPanelEl._shown = false;
       rankPanelEl.style.transition = '';
