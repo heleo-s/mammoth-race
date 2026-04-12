@@ -340,8 +340,7 @@
       border-radius: 50%;
       background: var(--btn-red);
       border: var(--btn-border);
-      color: #1f3650;
-      font-size: 18px;
+      font-size: 0;
       cursor: pointer;
       z-index: 60;
       display: flex;
@@ -404,7 +403,7 @@
   <div class="race-screen" id="raceScreen">
     <div class="race-canvas-wrap" id="canvasWrap">
       <canvas id="raceCanvas"></canvas>
-      <button class="btn-back-float" id="backBtn"><span style="position:relative;top:-2px;font-size:22px;">&#9632;</span></button>
+      <button class="btn-back-float" id="backBtn"><span style="display:block;width:14px;height:14px;background:#1f3650;border-radius:2px;"></span></button>
       <!-- 순위표 DOM -->
       <div id="rankPanel" style="
         display:none; position:absolute; pointer-events:none; z-index:5;
@@ -1773,8 +1772,9 @@
       if (resultBannerAlpha <= 0 || !resultMammoths.length) return;
 
       const dual = resultMammoths.length > 1;
-      const bw = Math.min(W * 0.85, dual ? 400 : 340);
-      const bh = Math.min(H * 0.65, 360);
+      const base = Math.min(W, H);
+      const bw = base * (dual ? 0.92 : 0.75);
+      const bh = bw * (dual ? 0.85 : 1.06);
 
       const dimEl = resultDimEl;
       dimEl.style.display = 'block';
